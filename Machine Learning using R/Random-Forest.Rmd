@@ -1,0 +1,602 @@
+---
+title: "Random Forest"
+author: "Zehui Bai"
+date: 'Stand: `r format(Sys.time(), "%F %H:%M Uhr")`'
+output:
+  html_document:
+    df_print: paged
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+fontsize: 10pt
+editor_options:
+  chunk_output_type: console
+colorlinks: yes
+---
+
+```{r setup, include=FALSE, echo = FALSE,message = FALSE, error = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# load package
+
+library(party)
+library(rpart)         # classification and regression trees
+library(partykit)      # treeplots
+library(MASS)          # breast and pima indian data
+library(randomForest)  # random forests
+library(xgboost)       # gradient boosting 
+library(caret)         # tune hyper-parameters
+```
+
+
+
+# Introduction
+
+## 决策树
+
+树形结构，一个节点node（包括根节点root）就是一个特征，通过特征的取值不同来判断，
+到达最终的叶节点（leaf）就是输出的标签值（也就是最终的分类选择），决策过程就是
+对每个特征（属性）值的判断。
+
+学习（由训练数据估计条件概率分布）时，用损失函数最小化的原则建立决策树模型（和
+logistic回归、SVM一样）。假设X是表示特征的随机变量，Y是表示类的随机变量，那么这
+个条件概率就可以表示为P(Y|X)，在叶节点上的一个样本属于某个类的条件概率更大，则
+将样本分到这个类上。
+
+从决策边界角度考虑决策树：在特征空间中，每一个节点（特征）的判断都可以看做一次
+分割，各节点在图形中横切一刀竖切一刀，最终形成不规则形状的决策边界。如何找到一
+条最佳的决策边界？
+
+* SVM的做法是引入间隔（margin）和支持向量（SV）的概念，到支持向量的间隔最大的超
+平面就是最好的超平面。
+* 决策树的做法则是引入熵（entropy）和信息增益的概念，每次分割的时候满足信息增益
+最大的原则（信息准则）。决策树中，决策边界的不同很大程度是由于各特征的使用顺序
+（在树上的位置）决定的，也就是说要决定先用哪个特征、后用哪个特征来切割，而每次
+特征选择的依据就是信息增益最大的原则。
+
+信息论中的熵：衡量信息量和不确定性。在信息论中，熵可以理解为接收的每条消息中包含
+的信息的平均量，因此又被称为信息熵、自信息（self-information）。它不仅是系统无序
+性（混乱程度）的度量，而且是信息量和不确定性的度量。信息本身可以消除不确定性，所
+以信息量本身也可以用不确定性衡量。不确定性越大，（消除不确定）需要的信息量越多。
+相反，发生概率越高的事件，其所携带的信息熵越低。“太阳从东方升起”是确定事件，所以
+不携带任何信息量。从信息论的角度，认为这句话没有消除任何不确定性。总而言之：不确
+定性大——预测正确的概率小——熵大
+
+信息增益，其实是一种互信息：表示得知特征X的信息后使得类Y的信息的不确定性减少的程
+度。信息增益越多，说明X提供的信息也越多，所以叫增益。因此也就衡量了X的重要性，所
+以可以作为特征选择的标准。
+
+
+
+
+## 决策树的构造：Hunt算法
+
+
+Hunt算法将训练数据集相继划分为较纯的子集，以递归方式构造决策树。设Dt是节点t分类后
+的数据集，y是类标号。如果Dt中所有记录都属于同一类，则t是叶子节点，用yt标记。如果Dt
+中包含有属于多个类的记录，则依据信息增益准则，选择一个划分属性，将Dt继续划分成较小
+的子集。每个子集对应创建一个子节点，然后对每个子节点，递归地调用该算法。
+
+问题一：因为训练集不是无限的，所以算法第二步创建的子节点对应的数据集可能为空。
+（解决：将该节点直接看作叶节点，其类标号为父节点上记录中的多数类）
+
+问题二：算法第二步创建的子节点对应的数据集中，除要作为继续划分依据的属性外，其他属
+性的取值都是相同的，这样继续划分是没有意义的。
+（解决：将该节点直接看作叶节点，其类标号为数据集中的多数类）
+
+### 停止迭代分支：剪枝（pruning）
+
+什么时候停止迭代，一种策略是分裂节点直至所有节点对应的记录都属于同一类，或者所有记录
+都具有相同的属性值。但因为训练集不可能穷尽真实世界中的所有组合，所以这种做法会造成过
+拟合的问题。
+
+——从决策边界的角度看，每一个节点（特征）的判断都可以看做一次分割，各节点在图形中横切
+一刀竖切一刀，最终形成多边形状的决策边界。如果选取的特征——节点越多（切的越多），切的
+次数越多，决策边界这条线越不平滑，也越容易造成过拟合。而解决的方法就是剪枝（提前终止
+决策树的生长或迭代以避免过拟合）。
+
+剪枝的依据是，如果当前节点的划分，不能带来决策树泛化能力的提升，则停止继续迭代并将当
+前节点标记为叶子节点。而判断是否能够带来决策树泛化能力提升，则需要预留一部分训练集数
+据作为验证集进行性能评估。
+
+### 预剪枝
+
+预剪枝（更快、更常用）：边建立模型，边剪枝。即一开始就不用选择所有特征，而是从中筛选
+某一些特征建立树。筛选的标准比如指定树的深度（max_depth）、每个节点的样本数（min_sam
+ples_split）、每个叶子节点的样本数（min_samples_leaf）、叶子节点个数（max_leaf_nodes）
+、信息增益量（min_impurity_split）等。
+
+### 后剪枝
+
+先按正常逻辑建立模型，然后再剪枝。叶子节点个数越多，损失函数越大。通过后剪枝让损失函数
+大的节点不再分裂。
+
+
+
+
+## 决策树模型
+
+### ID3（Iterative Dichotomiser 3）
+
+迭代二叉树分类器，最简单的决策树模型。采用自顶向下的贪婪搜索遍历可能的决策空间，越好的
+分割（信息增益大的特征/属性）越靠近顶部。
+
+### C4.5
+
+可处理连续型输入：将连续值离散化。先排序，然后二分。比如12|45|89
+
+优化特征选择的依据：信息增益准则的缺点是对可取值数目较多的特征有所偏好，因此C4.5算法使用
+增益率（信息增益除以父熵）准则进行优化。
+
+比如：考虑一个极端情况，一个特征的取值数等于样本数（比如ID这个特征），那么它相当于每个样
+本分一类，对每类而言，都只有一个样本，子熵为0，对总体而言，父熵很大，信息增益最大。但ID这
+个特征没啥用。
+
+
+## CART（Classification And Regression Tree）
+
+可以处理回归问题，改用基尼（Gini）不纯度指标作为特征选择依据：基尼不纯度表示一个随机选中的
+样本在子集中被分错的可能性。为这个样本被选中的概率乘以它被分错的概率。当一个节点中所有样本
+都是一个类时，基尼不纯度为零。基尼越大说明分类越不好。
+
+
+
+## 回归树
+
+树方法的精髓就是划分特征，从第一次分裂开始就要考虑如何最大程度改善RSS，然 后持续进行二叉分裂，直到树结束。后面的划分并不作用于全体数据集，而仅作用于上次划分时 落到这个分支之下的那部分数据。这个自顶向下的过程被称为“递归划分”。
+
+这个过程是贪婪的:
+
+    贪婪的含义是，算法在每次分裂中都追求最大程度减少RSS，而不管以后的划分中表现如何。这样做的结果是，你可能会生成一个带有无效分支的 树，尽管偏差很小，但是方差很大。为了避免这个问题，生成完整的树之后，你要对树进行剪枝， 得到最优的规模。
+
+这种方法的优点是可以处理高度非线性关系，但它还存在一些潜在的问题.
+首要的问题就是，一个观测被赋予所属终端节点的平均值，这会损害整体预测效果(高偏差)。相 反，如果你一直对数据进行划分，树的层次越来越深，这样可以达到低偏差的效果，但是高方差 又成了问题。和其他方法一样，你也可以用交叉验证来选择合适的深度。
+
+
+
+
+## 分类树
+
+分类树与回归树的运行原理是一样的，区别在于决定分裂过程的不是RSS，而是误差率。
+
+误差率不是简单地由误分类的观测数除以总观测数算出。实际上，进行树分裂 时，误分类率本身可能会导致这样一种情况:你可以从下次分裂中获得一些有用信息，但误分类率却没有改善。
+
+    假设有一个节点N0，节点中有7个标号为No的观测和3个标号为Yes的观测，我们就可以说误 分类率为30%
+    
+    通过另一种误差测量方式进行计算，这种方式称为基尼指数。 单个节点的基尼指数计算公式如下:
+    基尼指数=1-(类别1的概率)^2-(类别的概率)^2
+    
+    在此：对于N0，基尼指数为1 - (0.7)2 - (0.3)2，等于0.42，与之相对的误分类率为30%。
+    
+    假设将节点N0分裂成两个节点N1和N2，N1中有3个观测属于 类别1，没有属于类别2的观测;
+    N2中有4个观测属于类别1，3个属于类别2。现在，树的这个分支 的整体的误分类率还是30%
+    
+    整体的基尼指数：
+     基尼指数(N1) = 1 - (3/3)2 - (0/3)2= 0
+     基尼指数(N2) = 1 - (4/7)2 - (3/7)2= 0.49
+     新基尼指数 = (N1比例×基尼指数(N1))+(N2比例×基尼指数(N2)) = (0.3×0) + (0.7×0.49)=0.343
+     
+    改善了模型的不纯度，将其从原来的0.42减小到0.343，误分类率却没有变化。rpart()包就是使用Gini指数测量误差的
+    
+    
+    
+## 随机森林
+
+为了显著提高模型的预测能力，我们可以生成多个树，然后将这些树的结果组合起来。
+随机 森林技术在模型构建过程中使用两种奇妙的方法，以实现这个构想。
+    
+    第一个方法称为自助聚集，或称装袋。在装袋法中，使用数据集的一次随机抽样建立一个独立树，抽样的数量大概为全部观测的2/3(请记住，剩下的1/3被称为袋外数据，out-of-bag)。这个过程重复几十次或上百次，最后取平均结果。其中每个树都任其生长，不进行任何基于误差测量的剪枝，这意味着每个独立树的方差都很大。但是，通过对结果的平均化处理可以降低方差，同时又不增加偏差。
+
+    另一个在随机森林中使用的方法是，对数据进行随机抽样(装袋)的同时，独立树每次分裂时对输入特征也进行随机抽样。在randomForest包中，我们使用随机抽样数的默认值来对预测特征进行抽样。对于分类问题，默认值为所有预测特征数量的平方根;对于回归问题，默认值为所有预测 特征数量除以3。
+    
+通过每次分裂时对特征的随机抽样以及由此形成的一套方法，你可以减轻高度相关的预测特 征的影响，这种预测特征在由装袋法生成的独立树中往往起主要作用。这种方法还使你不必思索 如何减少装袋导致的高方差。独立树彼此之间的相关性减少之后，对结果的平均化可以使泛化效 果更好，对于异常值的影响也更加不敏感，比仅进行装袋的效果要好。
+
+在随机森林方法中，创建了大量的决策树。每个观察结果都被送入每个决策树。 每个观察结果最常用作最终输出。对所有决策树进行新的观察，并对每个分类模型进行多数投票。
+对于在构建树时未使用的情况进行错误估计。 这被称为OOB(Out-of-bag)错误估计，以百分比表示
+
+
+
+## 梯度提升
+
+主要思想：
+
+* 先建立一个某种形式的初始模型(线性、样条、树或其他)，称为基学习器
+* 然后检查残差， 在残差的基础上围绕损失函数拟合模型。    
+  损失函数测量模型和现实之间的差别，例如，在回归问 题中可以用误差的平方，在分类问题中可以用逻辑斯蒂函数。
+* 一直继续这个过程，直到满足某个 特定的结束条件
+
+Example：一个学生进行模拟考试，100道题中错了30道，然后 只研究那30道错题;在下次模考中，30道题中又错了10道，然后只研究那10道题，以此类推。
+
+梯度提升: 基于树的学习
+
+每个树迭代的次数都很少，我们要通过一个调优参数决定树的分裂次数，这个参数称 为交互深度。
+事实上，有些树很小，只可以分裂一次，这样的树就被称为“树桩”。
+这些树依次按照损失函数拟合残差，直至达到我们指定的树的数量(结束条件)。
+
+使用Xgboost包进行建模的过程中，有一些参数需要调整。Xgboost表示eXtreme Gradient Boosting。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Modellierung
+
+准备数据：前列腺癌数据集。使用ifelse()函数将gleason评分编码为指标变量，划分训练数据集和测试数据集，训练数据集为pros.train，测试数据集为pros.test
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## Load dataset
+prostate <- read.delim("~/Library/Mobile Documents/com~apple~CloudDocs/02. Programm/01 R_lernen/00 Data/prostate.txt", header=T)
+prostate$gleason <- ifelse(prostate$gleason == 6, 0, 1)
+pros.train <- subset(prostate, train == TRUE)[, 2:10]
+pros.test = subset(prostate, train == FALSE)[, 2:10]
+```
+
+
+
+
+
+
+
+
+## 回归树
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## 在训练数据集上建立回归树，使用party包中的rpart()函数
+set.seed(123)
+tree.pros <- rpart(lpsa ~ ., data = pros.train)
+tree.pros$cptable     ## 检查每次分裂的误差，以决定最优的树分裂次数
+                      ## CP的第一列是成本复杂性参数
+                      ## 第二列nsplit是树 分裂的次数，
+                      ## rel error列表示相对误差，即某次分裂的RSS除以不分裂的RSS(RSS(k)/RSS(0))
+                      ## xerror和xstd都是基于10折交叉验证的
+                      ## xerror是平均误差，xstd是交叉验证过程的标准差
+## 可以 看出，5次分裂在整个数据集上产生的误差最小，但使用交叉验证时，4次分裂产生的误差略微更 小。
+## 可以使用plotcp()函数查看统计图,使用误差条表示树的规模和相对误差之间的关系，误差条和树规模是对应的
+plotcp(tree.pros)
+
+## 树的xerror可以通过剪枝达到最 小化。
+## 剪枝的方法是先建立一个cp对象，将这个对象和表中第5行相关联，然后使用prune()函 数完成剩下的工作
+cp <- min(tree.pros$cptable[5, ])
+prune.tree.pros <- prune(tree.pros, cp = cp)
+
+## 可以用统计图比较完整树和剪枝树。
+## 由partykit包生成的树图明显优于party包生成的，在plot()函数中，可使用as.party()函数作为包装器函数, 它们显示了树的分裂、节点、每节点观测数，以及预测结果的箱线图
+plot(as.party(tree.pros))
+plot(as.party(prune.tree.pros))     ## 使用as.party()函数处理剪枝树
+                                    ## 除了最后一次分裂(完整树包含变量age)，两个树是完全一样的
+
+
+## Predict
+## 剪枝树在测试集上表现如何。在测试数据上使用predict()函数进行预测，并建立一个对象保存这些预测值。然后用预测值减去实际值，得到误差，最后算出误差平方的平均值
+party.pros.test <- predict(prune.tree.pros, 
+                           newdata = pros.test)
+rpart.resid <- party.pros.test - pros.test$lpsa    ## calculate residual
+mean(rpart.resid^2)
+```
+
+
+
+
+
+
+## 分类树
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## CART breast cancer 乳腺癌数据
+## 删除患者ID，对特征进行重新命名，删除一些缺失值，然后建立训练数据集和测试数据集
+data(biopsy)
+biopsy <- biopsy[, -1]
+names(biopsy) <- c("thick", "u.size", "u.shape", "adhsn", "s.size", "nucl", "chrom", "n.nuc", "mit", "class")
+biopsy.v2 <- na.omit(biopsy)
+set.seed(123)                       # random number generator
+ind <- sample(2, nrow(biopsy.v2), replace = TRUE, prob = c(0.7, 0.3))
+biop.train <- biopsy.v2[ind == 1, ] # the training data set
+biop.test <- biopsy.v2[ind == 2, ]  # the test data set
+str(biop.test)                      # 建立分类树之前，要确保结果变量是一个因子
+
+
+## 生成树，然后检查输出中的表格，找到最优分裂次数
+set.seed(123)
+tree.biop <- rpart(class ~ ., data = biop.train)
+tree.biop$cptable
+
+## 交叉验证误差仅在两次分裂后就达到了最小值(第3行)。现在可以对树进行剪枝，再在图中绘制剪枝树
+cp <- min(tree.biop$cptable[3, ])
+prune.tree.biop = prune(tree.biop, cp <- cp)
+## plot(as.party(tree.biop))
+plot(as.party(prune.tree.biop))
+
+## 在测试集上的表现
+rparty.test <- predict(prune.tree.biop, newdata = biop.test,
+                       type = "class")
+table(rparty.test, biop.test$class)
+## 只有两个分支的基本树模型给出了差不多96%的正确率
+(136+64)/209
+```
+
+
+
+
+
+## 随机森林回归
+
+建立一个随机森林对象的通用语法是使用 randomForest()函数，指定模型公式和数据集这两个基本参数。回想一下每次树迭代默认的变 量抽样数，对于回归问题，是p/3;对于分类问题，是p的平方根，p为数据集中预测变量的个数。 对于大规模数据集，就p而言，你可以调整mtry参数，它可以确定每次迭代的变量抽样数值。如 果p小于10，可以省略上面的调整过程。想在多特征数据集中优化mtry参数时，可以使用caret包， 或使用randomForest包中的tuneRF()函数。
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+set.seed(123)
+rf.pros <- randomForest(lpsa ~ ., data = pros.train)
+rf.pros        ## 生成了500个不同的树(默认设置)，并且在每次树分裂时随机抽出两个变量。
+               ## 结果的MSE为0.68，差不多53%的方差得到了解释
+               ## 改善。过多的树会导致过拟合,“多大的数量是‘过多’”依赖于数据规模。
+               ## 第一是做出rf.pros的统计图，另一件是求出最小的MSE
+
+## 图表示MSE与模型中树的数量之间的关系。可以看出，树的数量增加时，一开始MSE会有显著改善，当森林中大约建立了100棵树之后，改善几乎停滞
+plot(rf.pros)
+which.min(rf.pros$mse)   ## 具体的最优树数量
+                         ## 指定ntree =
+set.seed(123)
+rf.pros.2 <- randomForest(lpsa ~ ., data = pros.train, ntree = which.min(rf.pros$mse))
+rf.pros.2
+
+## 对模型进行检验之前，先看看另一张统计图。如果使用自助抽样和两个随机预测变量建立了80棵不同的树，要想将树的结果组合起来，需 要一种方法确定哪些变量驱动着结果。
+## 做出变量重要性统计图及相应的列表。 Y轴是按重要性降序排列的变量列表，X轴是MSE改善百分比。
+## 在分类问题中，X轴应 该是基尼指数的改善
+varImpPlot(rf.pros.2, scale = TRUE,
+           main = "Variable Importance Plot - PSA Score")
+## 查看具体数据，可以 使用importance()函数
+importance(rf.pros.2)    
+
+
+## 看看模型在测试数据上的表现:
+rf.pros.test <- predict(rf.pros.2, newdata = pros.test)
+## plot(rf.pros.test, pros.test$lpsa)
+rf.resid <- rf.pros.test - pros.test$lpsa 
+## calculate residual
+mean(rf.resid^2)
+```
+
+
+
+
+## 随机森林分类
+
+### 乳腺癌数据集
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## 乳腺癌诊断数据
+set.seed(123)
+rf.biop <- randomForest(class ~ ., data = biop.train)
+rf.biop         ## OOB(袋外数据)误差率
+
+plot(rf.biop)
+## 找出具体值。和前面不同的一点是，需要指定第一列来得到误差率，这是整体误差率
+which.min(rf.biop$err.rate[, 1])
+
+## 使模型正确率达到最优
+set.seed(123)
+rf.biop.2 <- randomForest(class ~ ., data = biop.train, ntree = 125)
+rf.biop.2
+
+## predict
+rf.biop.test <- predict(rf.biop.2, 
+                        newdata = biop.test, 
+                        type = "response")
+table(rf.biop.test, biop.test$class)
+## 训练集上的误差率还不到3%
+(138 + 67) / 209
+
+## 变量重要性统计图
+varImpPlot(rf.biop.2)
+## 变量重要性是指每个变量对基尼指数平均减少量的贡献，此处的变量重要性与单个树分裂时有很大区别。回忆一下，单个树是在细胞大小均匀度开始分裂的(与随机森林一致)，然后是nuclei，接着是细胞密度。这揭示了随机森林技术具有非常大的潜力，不但可以提高模 型预测能力，还可以改善特征选择的结果
+```
+
+
+### 皮玛印第安人糖尿病数据集
+
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## 皮玛印第安人糖尿病模型:数据准备
+data(Pima.tr)
+data(Pima.te)
+pima <- rbind(Pima.tr, Pima.te)
+set.seed(502)
+ind <- sample(2, nrow(pima), replace = TRUE, prob = c(0.7, 0.3))
+pima.train <- pima[ind == 1, ]
+pima.test <- pima[ind == 2, ]
+
+## 建立模型
+set.seed(321)
+rf.pima <- randomForest(type ~ ., data = pima.train)
+rf.pima
+# plot(rf.pima)
+
+## 对树的数目 进行优化
+which.min(rf.pima$err.rate[,1])
+set.seed(321)
+rf.pima.2 <- randomForest(type ~ ., data = pima.train, ntree = which.min(rf.pima$err.rate[,1]))
+rf.pima.2         ## OOB误差有些许改善
+
+
+
+rf.pima.test <- predict(rf.pima.2, 
+                        newdata = pima.test, 
+                        type = "response")
+table(rf.pima.test, pima.test$type)
+(75+33)/147
+#varImpPlot(rf.pima.2)
+
+```
+
+
+
+
+
+
+## 极限梯度提升——分类
+
+xgboost package
+
+     nrounds:最大迭代次数(最终模型中树的数量)。
+     colsample_bytree:建立树时随机抽取的特征数量，用一个比率表示，默认值为1(使用100%的特征)。 
+     min_child_weight:对树进行提升时使用的最小权重，默认为1。
+     eta:学习率，每棵树在最终解中的贡献，默认为0.3。
+     gamma:在树中新增一个叶子分区时所需的最小减损。
+     subsample:子样本数据占整个观测的比例，默认值为1(100%)。  max_depth:单个树的最大深度。
+
+使用expand.grid()函数可以建立实验网格，以运行caret包的训练过程。 对于前面列出的参数，如果没有设定具体值，那么即使有默认值，运行函数时也 会收到出错信息。下面的参数取值是基于以前的一些训练迭代而设定的。可以根据实验参数调整过程。
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## 建立一个具有24个模型的网格，caret包会运行这些模型，以确定最好的调优参数。
+grid = expand.grid(
+  nrounds = c(75, 100),
+  colsample_bytree = 1,
+  min_child_weight = 1,
+  eta = c(0.01, 0.1, 0.3), #0.3 is default,
+  gamma = c(0.5, 0.25),
+  subsample = 0.5,
+  max_depth = c(2, 3)
+)
+head(grid)
+
+## 使用car包的train()函数之前，创建一个名为cntrl的对象，来设定trainControl的参数。这个对象会保存要使用的方法，以训练调优参数。我们使用5折交叉验证
+## 在trControl中设定了verboseIter为TURE，所以可以看到每折交叉验证中的每次训练迭代。
+cntrl = trainControl(
+  method = "cv",
+  number = 5,
+  verboseIter = TRUE,
+  returnData = FALSE,
+  returnResamp = "final"                                                        
+)
+
+## 设定好所需参数即可:训练数据集、 标号、训练控制对象和实验网格。设定随机数种子
+set.seed(1)
+train.xgb = train(
+  x = pima.train[, 1:7],
+  y = ,pima.train[, 8],
+  trControl = cntrl,
+  tuneGrid = grid,
+  method = "xgbTree"
+)
+
+## 得到最优的参数，以及每种参数设置的结果
+train.xgb
+```
+
+
+
+
+接下来创建一个参数列表，供Xgboost包的训练函数xgb.train()使用。然后将数据框转换为一个输入特征矩阵，以及一个带标号的 数值型结果列表(其中的值是0和1)。接着，将特征矩阵和标号列表组合成符合要求的输入，即一个xgb.Dmatrix对象
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+param <- list(  objective           = "binary:logistic", 
+                booster             = "gbtree",
+                eval_metric         = "error",
+                eta                 = 0.1, 
+                max_depth           = 2, 
+                subsample           = 0.5,
+                colsample_bytree    = 1,
+                gamma               = 0.5
+)
+
+x <- as.matrix(pima.train[, 1:7])
+y <- ifelse(pima.train$type == "Yes", 1, 0)
+train.mat <- xgb.DMatrix(data = x, 
+                         label = y)
+
+## 创建模型
+set.seed(1)
+xgb.fit <- xgb.train(params = param, data = train.mat, nrounds = 75)
+xgb.fit
+
+## 查看模型效果之前，先检查变量重要性，并绘制统计图。你可以检查3个项目:gain、cover和frequecy。gain是这个特征对其所在分支的正确率做出的改善，cover是与这个特征相关的全体观测的相对数量，frequency是这个特征在所有树中出现的次数百分比
+impMatrix <- xgb.importance(feature_names = dimnames(x)[[2]], model = xgb.fit)
+impMatrix 
+xgb.plot.importance(impMatrix, main = "Gain by Feature")
+
+
+
+## 与训练集一样，测试集数据也要转换为矩阵
+library(InformationValue)
+pred <- predict(xgb.fit, x)
+optimalCutoff(y, pred)      ## 找出使误差最小化的最优概率阈
+pima.testMat <- as.matrix(pima.test[, 1:7])
+xgb.pima.test <- predict(xgb.fit, pima.testMat)
+y.test <- ifelse(pima.test$type == "Yes", 1, 0)
+optimalCutoff(y.test, xgb.pima.test)
+confusionMatrix(y.test, xgb.pima.test, threshold = 0.39)
+1 - misClassError(y.test, xgb.pima.test, threshold = 0.39)    ## 模型误差大概是25%
+
+## ROC曲线
+plotROC(y.test, xgb.pima.test)
+```
+
+
+
+
+
+# 使用随机森林进行特征选择
+
+Boruta包:[Kursa M., Rudnicki W. (2010), Feature Selection with the Boruta Package, Journal of Statistical Software, 36(11), 1 - 13]
+
+    1. 算法会复制所有输入特征，并对特征中的观测顺序进行重新组合，以去除 相关性，从而创建影子特征.
+    2. 然后使用所有输入特征建立一个随机森林模型，并计算每个特征(包 括影子特征)的正确率损失均值的Z分数
+    3. 如果某个特征的Z分数显著高于影子特征的Z分数，那么这个特征就被认为是重要的;反之，这个特征就被认为是不重要的
+    4. 然后，去除掉影子特征和那些已经确认了重要性的特征，重复上面的过程，直到所有特征都被赋予一个表示重要性的值
+    5. 算法结束之后，每个初始特征都会被标记为确认、待定或 拒绝
+    6. 对于待定的特征，必须自己确定是否要包括在下一次建模中。根据具体情况，可以有以下几种选择:
+        * 改变随机数种子，重复运行算法多次(k次)，然后只选择那些在k次运行中都标记为“确认”的属性
+        * 将你的训练数据分为k折，在每折数据上分别进行算法迭代，然后选择那些在所有k折数据上都标记为“确认”的属性
+        
+        
+        
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## prepare datasets
+## 数据集中有208个观测，60个输入特征，以及1个用于分类的标号向量。标号是个因子，如果sonar对象是岩石，标号就是R;如果sonar对象是矿藏，标号则是M
+data(Sonar, package="mlbench")
+dim(Sonar)
+table(Sonar$Class)
+
+## 在boruta()函数中创建一条模型公式。标号必须是因子类型，否则算法不会正常执行。如果想跟踪算法的进程，可以设定doTrace = 1。不要忘了设定随机数种子
+class(Sonar$Class)
+library(Boruta)
+set.seed(1)
+feature.selection <- Boruta(Class ~ ., data = Sonar, doTrace = 1)
+## 需要大量的计算能力
+feature.selection$timeTaken
+## 得出最终重要决策的计数
+table(feature.selection$finalDecision)
+
+## 以找出特征名称: 以找出特征名称
+fNames <- getSelectedAttributes(feature.selection) 
+## 包括“确认”和“待定”的特征
+fNames <- getSelectedAttributes(feature.selection, withTentative = TRUE)
+fNames
+## 使用这些特征名称，可以创建一个Sonar数据集的子集
+Sonar.features <- Sonar[, fNames]
+dim(Sonar.features)
+```
+
+
+
+

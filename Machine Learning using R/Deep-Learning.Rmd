@@ -1,0 +1,132 @@
+---
+title: "深度学习"
+author: "Zehui Bai"
+date: 'Stand: `r format(Sys.time(), "%F %H:%M Uhr")`'
+output:
+  html_document:
+    df_print: paged
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+fontsize: 10pt
+editor_options:
+  chunk_output_type: console
+colorlinks: yes
+---
+
+```{r setup, include=FALSE, echo = FALSE,message = FALSE, error = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+## 机器学习基于R 第7章 神经网络与深度学习 
+```
+
+
+
+
+深度学习是机器学习的一个分支，它基于一整套算法，试图对数据 中的高层次抽象进行建模，建模过程需要使用带有复杂结构或其他结构的由多重非线性转换组成 的模型体系结构。深度学习的基础就是神经网络，它的特点 其实就是使用机器学习技术（一般是无监督学习）在输入变量的基础之上构建新的特征。
+
+识别潜在结构的方式
+
+1.正则化: 对权重进行惩罚，比如L1（惩罚非0权重）、 L2（惩罚过大权重）和丢弃（随机忽略某种输入，将其权重归零）。
+2.降低数据的维度，比如自动编码器。在这种神经网络中，输 入被转换为一组降低了维度的权重. 这种方法可以递归使用. 网络在不断使用原有特征制造新特征，以至于它们互相堆叠在一起。深度学习会先在两个层之间 按前后顺序学习权重，然后使用反向传播方法对这些权重进行微调。其他的特征选择方法包括受 限波尔兹曼机和稀疏编码模型
+
+
+##  数据准备
+
+下载小数据集 bank.csv，将数值型变量按比例缩放为均值为0、方差为1，为字符型变量或稀疏数值型变量创建 虚拟变量，并删除方差基本为0的变量. 这份数据可以在github上找到，地址为https://github.com/ datameister66/data/，数据集名称是bank_DL.csv
+
+H2O是一个开源的预测分析平台，它有很多预置算法，比如K最近邻、梯度提升机和深度学习。你可以通过Hadoop、AWS、Spark、SQL、noSQL或自己的硬盘将数据上载到平台。H2O的 一个巨大优点是，你可以在自己的本地计算机上使用平台上的大多数机器学习算法，这些算法是 用R实现的
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## H2O包完成一个深度学习的实战示例
+## 在R中安装H2O的过程有些与众不同
+## The following two commands remove any previously installed H2O packages for R.
+if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
+if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
+
+# Next, we download packages that H2O depends on.
+if (! ("methods" %in% rownames(installed.packages()))) { install.packages("methods") }
+if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statmod") }
+if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
+if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
+if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
+if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
+if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
+if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
+
+# Now we download, install and initialize the H2O package for R.
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-tverberg/5/R")))
+library(h2o)
+
+
+## 将数据上载到 H2O 平台
+## getwd()函数会返回工作目录的路径。
+path <- "C:/Users/Cory/Desktop/2nd Edition/bank_DL.csv"
+## 连接到H2O平台，并在集群上启动一个实例。设置参数nthreads = -1，使实例可以使用集群上的所有CPU
+localH2O = h2o.init(nthreads = -1)
+## 上传文件
+bank <- h2o.uploadFile(path=path)
+## 通过class()函数检查
+class(bank)
+str(bank)
+head(bank)
+summary(bank)
+## 划分数据集之前，看看响应变量的分布，
+h2o.table(bank$y)
+
+## 以利用H2O平台内置的函数将数据划分为训练集和测试集。首先要为数据建立一个统一的 随机数向量, 后即可划分数据，并将数据分配给相应的对象。此时需要指定关键字key的值
+rand <- h2o.runif(bank, seed = 123)
+
+train <- bank[rand <= 0.7, ]
+train <- h2o.assign(train, key = "train")
+test <- bank[rand  > 0.7, ]
+test <- h2o.assign(test, key = "test")
+
+## 建立训练集和测试集之后，应该看看二者之间的响应变量分布是否均衡
+h2o.table(train[, 64])
+h2o.table(test[, 64])
+```
+
+
+## 模型构建
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## 检查的超参数有：有舍弃（dropout）和无舍弃的tanh激活函数、3种不同形式的隐藏层（神 经元组合）、两种不同的舍弃率，以及两种不同的学习率。
+hyper_params <- list(
+  activation = c("Tanh", "TanhWithDropout"),
+  hidden = list(c(20,20),c(40, 40),c(30, 30, 30)),
+  input_dropout_ratio = c(0, 0.05),
+  rate = c(0.01, 0.25)
+)
+## 将随机搜索原则设置在一个列表里。因为我们要使用随机搜索，所以要将strategy设置 为RandomDiscrete；如果要进行全网格搜索，就要设置为Cartesian。我建议你为随机搜索设置一 个或多个提前结束标准，比如max_runtime_secs、max_models等。我还设置了一个结束标准， 即前5个模型之间的误差在1%以内
+search_criteria = list(
+  strategy = "RandomDiscrete", max_runtime_secs = 420,     
+  max_models = 100, seed = 123, stopping_rounds = 5, 
+  stopping_tolerance = 0.01
+)
+
+## h2o.grid()函数大显身手的时候了。我们需要告诉这个函数使用深度学习算法， 还有要使用的训练数据集、验证数据（测试数据集）、输入特征和响应变量
+randomSearch <- h2o.grid(
+  algorithm = "deeplearning",
+  grid_id = "randomSearch",
+  training_frame = train,
+  validation_frame = test, 
+  x = 1:63, 
+  y = 64,
+  epochs = 1,
+  stopping_metric = "misclassification",
+  hyper_params = hyper_params,
+  search_criteria = search_criteria
+)                        
+## 检查一下效果最好的前5个模型的结果
+grid <- h2o.getGrid("randomSearch", sort_by = "auc", decreasing = T)
+grid
+## Interpretation: 第57号模型最终胜出，它使用有舍弃的tanh激活函数、3个隐藏层（每个隐藏层中有 30个神经元）、0.05的舍弃率和0.25的学习率，其AUC大概是0.864。
+
+## 通过混淆矩阵查看模型在测试数据上的错误率
+best_model <- h2o.getModel(grid@model_ids[[1]])
+h2o.confusionMatrix(best_model, valid = T)
+## 尽管错误率只有11%，但yes标签上的错误太多了，它的假阳性率和假阴性率都非常高。这说 明不平衡的分类可能是一个问题
+```

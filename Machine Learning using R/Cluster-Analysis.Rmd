@@ -1,0 +1,333 @@
+---
+title: "聚类分析"
+author: "Zehui Bai"
+date: 'Stand: `r format(Sys.time(), "%F %H:%M Uhr")`'
+output:
+  html_document:
+    df_print: paged
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+fontsize: 10pt
+editor_options:
+  chunk_output_type: console
+colorlinks: yes
+---
+
+```{r setup, include=FALSE, echo = FALSE,message = FALSE, error = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+## 聚类分析
+library(cluster)       # conduct cluster analysis
+library(compareGroups) # build descriptive statistic tables
+library(HDclassif)     # contains the dataset
+library(NbClust)       # cluster validity measures
+library(sparcl)        # colored dendrogram
+```
+
+
+
+
+
+# Introduction
+
+有一个响应变量Y，Y是X的函数，或表示为 y = f(x)。我们的数据中有Y的实际值，以Y为依据训练X。这种方式称为监督式学习。但是，我 们从数据中学习知识的时候通常没有响应变量Y，或者故意忽略了Y。此时就进入无监督学习 的世界。在这个世界里，我们建立和选择算法的基准是算法能够明确满足业务需求的程度，而 不是算法的正确率。
+
+无监督学习可以帮助你理解并识别出数据中的模式，这可 能非常有价值。其次，你可以通过无监督学习转换数据，提高监督式学习技术的效果
+
+聚类分析的目标是将 观测分成若干组（k个组），使同一组内的成员尽可能相似，不同组间的成员尽可能不同. 我们将重点讨论两种最常用的技术：层次聚类和 K均值聚类。它们都是非常有效的聚类方法，但如果你要分析的是大规模的高复杂度的数据集， 它们可能不太适合。所以，我们还要研究围绕中心点的划分，它使用基于果瓦度量的相异度矩阵作为输入。最后讨论一种我最近才学习和使用的新技术——使用随机森林转换数据。转换后的数 据可以用作无监督学习的输入。
+
+## 层次聚类
+
+层次聚类算法的基础是观测之间的相异度测量。我们使用的是通用的测量方式——欧氏距 离，当然还有其他方式。层次聚类是一种凝聚式的或自底向上的技术。首先，所有观测都是自己本身的一 个簇；然后，算法开始在所有的两点组合之中进行迭代搜索，找出最相似的两个 簇，将它们聚集成一个簇。所以，第一次迭代之后，有n 1个簇；第二次迭代 之后，有n 2个簇，依此类推
+
+进行迭代时，除了距离测量之外，还有一个重要问题是需要确定观测组之间的测距方式，不 同类型的数据集需要使用不同的簇间测距方式
+
+常用的测距方式类型: 
+
+* Ward距离, 使总的簇内方差最小，使用簇中的点到质心的误差平方和作为测量方式
+* 最大距离（Complete linkage), 两个簇之间的距离就是两个簇中的观测之间的最大距离
+* 质心距离（Centroid linkage),  两个簇之间的距离就是两个簇的质心之间的距离
+
+dist()函数计算距离: 默认方式欧氏距离, 可以在这个函数中指定其他距离计算方式（如最大值距离、 曼哈顿距离、堪培拉距离、二值距离和闵可夫斯基距离）。
+
+最后需要注意的是，要对你的数据进行标准化的缩放操作，使数据的均值为0， 标准差为1，这样在计算距离时才能进行比较。否则，变量的测量值越大，对距 离的影响就越大。
+
+
+
+
+
+
+
+
+##  K均值聚类 
+
+使用K均值聚类时，需要明确指定所需的簇的数目，然后算法开始迭代，直到每个观测都属 于某个簇。算法的目标是使簇内的差异最小，簇内差异由欧氏距离的平方定义。所以，第k个簇 的簇内差异等于簇内所有两个观测之间的欧氏距离的平方和，再除以簇内观测的数量
+
+迭代过程:
+
+    1. 设定:你需要的簇的确切数量(k)。
+    2. 初始化:随机选择k个观测作为初始均值。
+    3. 迭代:
+       将每个观测分配给离它最近的簇中心点(使簇内平方和最小)，建立k个簇;
+       将每个簇的中心点作为新的均值;
+       重复上面两个步骤，直至收敛，即簇中心点不再改变。
+       
+因为第1步中的初始分配是随机的，所以会造成每次聚类结果不一致。因此，重要 的一点是，要进行多次初始分配，让软件找出最优的解。
+
+
+
+
+
+
+
+
+
+## 果瓦系数与围绕中心的划分
+
+无论层次聚类还是K均值聚类，都不是 为分析混合数据(既包括定量数据又包括定性数据)而专门设计的
+
+    使用果瓦相异度系数将混合数据转换为适当的特征 空间。在这种方法中，你甚至可以使用因子作为输入变量
+    处理混合数据，比 如可以先进行主成分分析, 建立潜变量，然后使用潜变量作为聚类的输入
+    聚类算法使用 PAM聚类算法，而不是K均值, PAM和K均值很相似, 有两个明显的优点
+        1. PAM可以接受相异度矩阵作为输入，这样即可处理混合数据
+        2. PAM对于异常值和不对称数据的鲁棒性更好，因为它最小化的是相异度总和，而不是欧氏距离的平方和
+
+
+### 相异度矩阵 dissimilarity matrix
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+knitr::include_graphics("./00 Fotos/dissimilarity matrix.png")
+```
+
+
+### 不同数据类型的相异度计算 (距离法)
+
+把一个观测看做M维空间中的一个点，并在空间中定义距离。基于距离的聚类算法是把距离较近的点可以归入同一类，距离远的点归入不同的类。常见的距离度量方法有欧几里得距离、切比雪夫距离、曼哈顿距离、兰氏距离等方法。
+
+#### 欧几里得距离
+
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+knitr::include_graphics("./00 Fotos/Euclidean distance.png")
+
+a=matrix(rnorm(15,0,1),c(3,5))
+a
+dist(a,p=2)
+## 第一个行与第二行的距离为2.174710；第二行与第三行的距离为3.966592
+```
+
+#### 切比雪夫距离
+
+国际象棋中，国王可以直行、横行、斜行，所以国王走一步可以移动到相邻8个方格中的任意一个。国王从格子(x1,y1)走到格子(x2,y2)最少需要多少步？这个距离就叫切比雪夫距离。
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+a=matrix(rnorm(15,0,1),c(3,5))
+a
+dist(a,"maximum")
+```
+
+
+#### 曼哈顿距离
+
+顾名思义，在曼哈顿街区要从一个十字路口开车到另一个十字路口，驾驶距离显然不是两点间的直线距离。这个实际驾驶距离就是“曼哈顿距离”。曼哈顿距离也称为“城市街区距离”(City Block distance)。
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+aa=matrix(rnorm(15,0,1),c(3,5))
+dist(aa,"manhattan")
+```
+
+#### 兰氏距离
+
+兰氏距离对数据的量纲不敏感。不过兰氏距离假定变量之间相互独立，没有考虑变量之间的相关性。
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+aa=matrix(rnorm(15,0,1),c(3,5))
+dist(aa, method = "canberra")
+```
+
+
+
+
+### 果瓦系数
+
+果瓦系数比较两个成对的实例，并计算它们之间的相异度，实质上就是每个变量的贡献的加
+权平均值。对于两个实例i与j，果瓦系数定义如下
+
+$$S_{ij} = sum(W_{ijk} * S_{ijk}) / sum(W_{ijk})$$
+
+$S_{ijk}$是第k个变量的贡献。如果第k个变量是有效的，$W_{ijk}$是1，否则是0
+
+
+
+
+
+
+
+### PAM
+
+中心点是簇内所有观测中，使相异度(使用果瓦系数表示)最小的那个观测。所
+以，同K均值一样，如果指定5个簇，就可以将数据划分为5份。
+
+PAM算法的目标是，使所有观测与离它们最近的中心点的相异度最小。该算法按照下面的步骤迭代:
+
+    1. 随机选择k个观测作为初始中心点;
+    2. 将每个观测分配至最近的中心点;
+    3. 用非中心点观测替换中心点，并计算相异度的变化;
+    4. 选择能使总相异度最小的配置;
+    5. 重复第(2)步~第(4)步，直至中心点不再变化。
+
+
+果瓦系数和PAM都可以使用R中的cluster包实现。使用daisy()函数计算相异度矩阵，从而 计算果瓦系数，然后使用pam()函数进行实际的数据划分
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Application
+
+## 数据准备
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## 数据集位于HDclassif包
+## 数据包括178种葡萄酒，有13个变量表示酒中的化学成分，还有一个标号变量Class，表示品 种等级或葡萄种植品种。在聚类过程中，我们不会使用这个标号变量，而是用它验证模型性能。
+data(wine)
+str(wine)
+names(wine) <- c("Class", "Alcohol", "MalicAcid", "Ash", "Alk_ash",
+                 "magnesium", "T_phenols", "Flavanoids", "Non_flav",
+                 "Proantho", "C_Intensity", "Hue", "OD280_315", "Proline")
+names(wine)
+df <- as.data.frame(scale(wine[, -1]))
+str(df)
+table(wine$Class)
+```
+
+
+## 层次聚类
+
+要在R中建立层次聚类模型，可以使用stats包中的hclust()函数。这个函数需要两个基本输 入:距离矩阵和聚类方法。使用dist()函数可以轻松生成距离矩阵，我们使用的是欧氏距离。 可以使用的聚类方法有若干种，hclust()函数使用的默认方法是最大距离法
+
+30种不同的聚类有效性指标。表现最好的前5种指标是CH指数、Duda指数、Cindex、Gamma 和Beale指数。另外一种确定簇数目的著名方法是gap统计量
+
+在R中，我们可以使用NbClust包中的NbClust()函数，求出23种聚类有效性指标的结果，包 括Miligan和Cooper论文中最好的5种和gap统计量
+
+使用这个函数时，你需要指定簇的最小值和最大值、距离类型、测距方式和有效性指标。在以下的代码中可以看到，我们要建立一个名 为numComplete的对象，函数指定使用欧氏距离，簇的最小数量为2，最大数量为6，测距方式为 最大距离法，并使用所有有效性指标。
+
+Hubert指数图:
+在左侧的图中，你要找出一 个明显的拐点;在右侧的图中，你要找到峰值.左图在3个簇的地方有个拐点，右图在3个簇的时候达到峰值
+
+Dindex图:提供了同样的信息
+
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+numComplete <- NbClust(df, distance = "euclidean", 
+                       min.nc = 2, max.nc = 6, 
+                       method = "complete", index = "all")
+## 每种有效性指标的最优簇数 量和与之对应的指标值
+## 第一个指标(KL)的最优簇数量是5，第二个指标(CH)的最优簇数量是3
+numComplete$Best.nc
+
+## 选择3个簇进行聚类，现在计算距离矩阵，并建立层次聚类模型
+dis <- dist(df, method = "euclidean")
+hc <- hclust(dis, method = "complete")
+
+## 可视化的通用方式是画出树状图，可以用plot函数实现。注意，参数hang=-1表示 将观测排列在图的底部
+## 树状图表明了观测是如何聚集的，图中的连接(也可称为分支)告诉我们哪些观测是相 似的。分支的高度表示观测之间相似或相异的程度
+plot(hc, hang = -1,labels = FALSE, main = "Complete-Linkage")
+
+## 想使聚类可视化效果更好，可以使用sparcl包生成彩色树状图。要对合适数目的簇上色， 需要使用cutree()函数对树状图进行剪枝，以得到合适的簇的数目。这个函数还可以为每个观 测生成簇标号:
+comp3 <- cutree(hc, 3)
+ColorDendrogram(hc, y = comp3, main = "Complete", branchlength = 50)
+
+## 我指定了参数branchlength=50，这个值要根据你自己的数据确定。因为我们已 经有了簇标号，所以可以建立一个表格查看每个簇中观测的数量
+table(comp3)
+table(comp3, wine$Class)
+## 行是簇标号，列是品种等级标号。聚类结果匹配了84%的品种等级
+(51+50+48)/178
+
+
+
+
+
+## Ward距离法。代码和前面的一样，首先确定簇的数目，应该将method的值改为 Ward.D2
+numWard <- NbClust(df, diss = NULL, distance = "euclidean", 
+        min.nc = 2, 
+        max.nc = 6, 
+        method= "ward.D2", 
+        index = "all")
+
+hcWard <- hclust(dis, method = "ward.D2")
+plot(hcWard, hang = -1, labels = FALSE, main = "Ward's-Linkage")
+
+## 图中显示的3个簇区别十分明显，每个簇中观测的数量大致相同。计算每个簇的大小，并与 品种等级标号进行比较
+ward3 <- cutree(hcWard, 3)
+table(ward3, wine$Class)  
+## 另一个表比较两种方法的观测匹配情况
+table(comp3, ward3)
+
+
+
+## 箱线图可以很好地比较变量的分布，它可以展示最小值、第一四分位数、中位数、第三四分 位数、最大值和可能的离群点
+par(mfrow = c(1, 2))
+boxplot(wine$Proline ~ comp3, 
+        main = "Proline by Complete Linkage")
+boxplot(wine$Proline ~ ward3, 
+        main = "Proline by Ward's Linkage")
+## Ward距离法中 的第一个和第二个簇具有更紧凑的四分位距，没有疑似离群点
+```
+
+
+
+
+## K 均值聚类
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## 函数中将method的值设定为kmeans即可，同时将最大簇数目放大到15
+numKMeans <- NbClust(df, min.nc = 2, max.nc = 15, method = "kmeans")
+## 3个簇再次成为最优解
+set.seed(1234)
+km <- kmeans(df, 3, nstart = 25)
+table(km$cluster)
+
+## 簇之间的观测数量分布得非常均衡。我曾经不止一次遇到过这种情况，在一个有很多变量的 大数据集中，不管使用多少个簇的K均值聚类，都得不到有价值且令人信服的结果。对聚类结果 的另一种分析方式是查看簇中心点矩阵，它保存了每个簇中每个变量的中心点值:
+km$centers
+```
+
+
+## 果瓦系数和PAM
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## 处理因子变量，所以可以将酒 精函数转换为因子，它有两个水平:高/低
+wine$Alcohol <- as.factor(ifelse(df$Alcohol > 0, "High", "Low"))
+## 建立相异度矩阵，使用cluster包中的daisy()函数
+disMatrix <- daisy(wine[, -1], metric = "gower")  
+set.seed(123)
+pamFit <- pam(disMatrix, k = 3)
+table(pamFit$clustering)
+table(pamFit$clustering, wine$Class)
+
+wine$cluster <- pamFit$clustering
+
+
+## 使用compareGroups包建立一张描述性统计表
+group <- compareGroups(cluster ~ ., data = wine) 
+clustab <- createTable(group) 
+clustab
+# export2csv(clustab,file = "wine_clusters.csv")
+# export2pdf(clustab, file = "wine_clusters.pdf")
+```
+
+

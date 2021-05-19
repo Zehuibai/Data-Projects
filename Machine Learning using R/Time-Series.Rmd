@@ -1,0 +1,204 @@
+---
+title: "时间序列和因果关系"
+author: "Zehui Bai"
+date: 'Stand: `r format(Sys.time(), "%F %H:%M Uhr")`'
+output:
+  html_document:
+    df_print: paged
+    number_sections: yes
+    # theme: darkly
+    toc: yes
+    toc_float: yes
+fontsize: 10pt
+editor_options:
+  chunk_output_type: console
+colorlinks: yes
+---
+
+
+```{r setup, include=FALSE, echo = FALSE,message = FALSE, error = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+## 精通机器学习基于R 第12章
+library(ggfortify)
+```
+
+
+# Introduction
+
+
+单变量时间序列就是按照标准的时间间隔进行收集的测量结果，时间间隔可以是分钟、小时、 天、周或者月。时间序列与使用其他方式收集的数据相比具有特殊的问题，因为观测顺序非常重 要。这种对观测顺序的依赖会使标准分析方法产生不必要的偏差和方差。
+
+另一个存在于时间序列中但经常被忽视的问题是因果关系。是的，我们没有将相关性和因果 关系混为一谈，但是在时间序列分析中，可以使用格兰杰因果关系模型这样的技术来确定是否存 在统计角度的因果关系。
+
+
+
+## 单变量时间序列分析
+
+着重讨论两种分析和预测单变量时间序列的方法:指数平滑和自回归移动平均模型。
+
+与移动平均模型相似，指数平滑模型对过去的观测进行加权。但和移动平均模型不同的是， 在指数平滑模型中，相对于更远期的观测来说，越是近期的观测，所得的权重越高。有3个可能 的平滑参数需要估计:整体平滑参数、趋势参数和平滑参数。如果不存在趋势或季节性因素，相
+应的参数就失效。
+
+
+```{r, echo=FALSE}
+knitr::include_graphics("./00 Fotos/Time Serises.png")
+```
+
+在自回归模型中，时间T处的Y值是前一个Y值的线性函数。一阶自回归模型(AR(1))的公 式是Yt = 常数 + ΦYt-1 + Et。模型的关键假设如下:
+
+*  Et 是独立同分布的误差，均值为0，方差是一个常数; 
+*  误差与Yt是独立的;
+*  $Y_t$、$Y_{t-1}$、$Y_{t-n}$...是平稳的，这说明Φ的绝对值小于1。
+
+
+
+
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## R建立并绘制一个一阶自回归序列
+set.seed(123)
+ar1 <- arima.sim(list(order = c(1, 0, 0), ar = 0.5), n = 200)
+autoplot(ar1, main = "AR1")
+
+## ACF图中显示，延迟(Lag)增加时，相关性呈指数减少。虚线表示显著相关性的置信带， 13 任何一条超出置信带上界和下界的竖线都被认为是显著的相关性
+autoplot(acf(ar1, plot = F), main = "AR1 - ACF")
+
+## 除了ACF，还可以检查偏自相关函数。PACF计算的是条件相关性，表示Yt与Yth之间的相关性受二者之间的观测影响。对条件 相关的一种直观理解是线性回归模型及其系数。假设有两个线性回归模型Y = β0 + β1X1和Y = β0 +
+autoplot(pacf(ar1, plot = F), main = "AR1 - PACF")
+```
+
+
+
+
+
+
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## 一阶延迟具有显著的相关性
+set.seed(123)
+ma1 <- arima.sim(list(order = c(0, 0, 1), ma = -0.5), n = 200)
+autoplot(ma1, main = "MA1")
+autoplot(acf(ma1, plot = F), main = "MA1 - ACF")
+autoplot(pacf(ma1, plot = F), main = "MA1 - PACF")
+```
+
+
+## 格兰杰因果关系
+
+如果有两组时间序列数据x和y，格兰杰因果关系模型负责确定一个序列是否会影响另 一个序列中的变化。它的做法是使用一个序列中的不同延迟序列为第二个序列中的变化建模。要 达成这个目的，需要建立两个模型以预测y，一个模型只使用y的前期数据(Ω)，另一个模型使 用y的前期数据和x(π)。
+
+
+
+
+
+# Application
+
+## 数据准备
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+climate <- read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/02. Programm/01 R_lernen/00 Data/climate.csv",stringsAsFactors = F)
+str(climate)
+
+## 转换为时间序列结构，指定开始年份和结束年份
+climate <- ts(climate[, 2:3], frequency = 1, 
+              start = 1919, end = 2013)
+head(climate)
+
+library(forecast)
+library(tseries)
+
+## 绘制两个时间序列
+plot(climate)
+
+## 二氧化碳排放水平确实在第二次世界大战后开始增长，温度的异常变化大 约发生在20世纪70年代中期，那时开始急剧升高。没有明显的异常值，不同时间的方差看上去也 6 是个固定值。通过标准的分析过程可以知道，两个序列是高度相关的
+cor(climate)
+
+
+## 绘制两个序列的ACF图和 PACF图
+autoplot(acf(climate[, 2], plot = F), main="Temp ACF")
+autoplot(pacf(climate[, 2], plot = F), main="Temp PACF")
+autoplot(acf(climate[, 1], plot = F), main="CO2 ACF")
+autoplot(pacf(climate[, 1], plot = F), main = "CO2 PACF")
+## ACF模式是逐渐衰减的，PACF模式则是快速衰减的。可以假设这两个序列都是自回归的
+
+
+
+## 检查交叉相关函数。请注意，在函数中，要把x放在y的前面:
+## CCF图展示了温度和二氧化碳延迟序列之间的相关性。如果x变量的负延迟序列具有强相关 性，则x领先于y;如果x变量的正延迟序列具有强相关性，则x滞后于y。此处可以看到，二氧化 碳既是个领先变量，也是个滞后变量
+ccf(climate[, 1], climate[, 2], main = "CCF") 
+
+
+## 检验数据是否平稳。可以通过tseries包中提供的扩展迪基福勒检验实现这个操作
+adf.test(climate[, 1])
+adf.test(climate[, 2])
+```
+
+
+
+## 模型构建
+
+1. 第一，建立一个仅应用于温度数据的单变量预测 模型;
+2. 第二，基于温度数据本身和二氧化碳排放量数据建立一个温度数据的回归模型;
+3. 第三，使 用这个模型的输出揭示二氧化碳排放量和地表温度异常之间是否存在格兰杰因果关系。
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+
+## 测试集与训练集使用不同的时间序列
+temp <- climate[, 2]
+train <- window(temp, start = 1946, end = 2003)
+test <- window(temp, start = 2004)
+
+## 建立平滑模型，可以使用forecast包中的holt()函数
+## 没有阻尼趋势的holt模型
+fit.holt <- holt(train, h = 10, initial = "optimal")
+# summary(fit.holt)
+plot(forecast(fit.holt))
+lines(test, type= "o")
+
+## 有阻尼趋势的holt模型
+fit.holtd <- holt(train, h = 10, initial = "optimal", damped = TRUE)
+# summary(fit.holtd)
+plot(forecast(fit.holtd), main ="Holt Damped")
+lines(test, type = "o")
+
+
+## 建立一个ARIMA模型，使用forecast包中的auto.arima()函数
+fit.arima <- auto.arima(train)
+summary(fit.arima)
+## 函数选择的模型是MA = 1、I = 1，也就是带有漂移项(等价于截距) 的ARIMA(0, 1, 1)。和前面一样
+plot(forecast(fit.arima, h = 10))
+lines(test, type="o")
+
+
+## 为每种模型打分，找出具有最低误差，即平均绝对百分误差的模型
+mapeHOLT <- sum(abs((test - fit.holt$mean)/test))/10
+mapeHOLT
+mapeHOLTD <- sum(abs((test - fit.holtd$mean)/test))/10
+mapeHOLTD
+mapeARIMA <- sum(abs((test - forecast(fit.arima, h = 10)$mean)/test))/10
+mapeARIMA
+## 通过统计检验和可视化证据，单变量预测模型的最好选择似乎是ARIMA模型
+```
+
+
+## 检查因果关系
+
+### 线性回归
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+fit.lm <- lm(Temp ~ CO2, data = climate)
+summary(fit.lm)
+## 残差的时间序列图
+plot.ts(fit.lm$residuals)
+## ACF图，可以看出，直到10阶延迟序列，都具有显著的自相关
+acf(fit.lm$residuals)
+## 自相关性使用Durbin-Watson检验
+## dwtest(fit.lm)
+
+## granger causality
+ndiffs(climate[, 1], test = "adf")
+ndiffs(climate[, 2], test = "adf")
+```
+
+
