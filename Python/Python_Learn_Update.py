@@ -9,3 +9,9 @@ print('Hello world')
 import numpy as np
 data = {i : np.random.randn() for i in range(7)}
 data
+
+
+import matplotlib
+matplotlib.__version__
+
+import pandas as pd
