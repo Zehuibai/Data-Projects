@@ -1,0 +1,110 @@
+---
+title: "Geburtsdataset exploration"
+author: "Zehui Bai"
+date: 'Stand: `r format(Sys.time(), "%F %H:%M Uhr")`'
+output:
+  html_document:
+    df_print: paged
+    number_sections: no
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+  md_document:
+    toc: yes
+fontsize: 10pt
+editor_options:
+  chunk_output_type: console
+colorlinks: yes
+---
+
+```{r setup, include=FALSE, echo = FALSE,message = FALSE, error = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# load package
+pkgs = c("ggplot2", "ggcorrplot")
+inst = lapply(pkgs, library, character.only = TRUE) 
+```
+
+
+
+
+
+
+
+
+
+
+
+# Data Exploration
+
+## Explore the missing data
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## Load the sas7bat datasets
+require(haven) 
+## scan("clipboard",what="string")
+geburt1 <- read_sas("C:\\Users\\zbai\\Documents\\GitHub\\R-Projects\\SAS\\geburt1.sas7bdat")
+
+knitr::kable(sapply(geburt1,function(x)sum(is.na(x))))
+```
+
+## Explore the variable Probleme nach Geburt 
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+table(geburt1$e018,useNA="always")
+geburt1$e018 <- factor(geburt1$e018, 
+                       levels = c("1", "2"), 
+                       labels = c("Yes", "No"))
+
+## Visualization
+theme_set(theme_bw())
+ggplot(data = geburt1) + 
+  geom_bar(mapping = aes(x = e018, y = ..prop..,  group=1),width=.5)+
+  labs(title="Probleme nach Geburt", 
+       subtitle="Relative Proportions")
+```
+
+
+
+
+# Correlation Exploration
+
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+## Compute correlation matrix
+## round(cor(biopsy[-1]), 2)
+
+## Correlation greater than 0.9
+CorrMatrixtable <- function(cormat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut]
+  )
+}
+
+geburt1b <- subset(geburt1, select = -c(E014z))
+
+library(tidyverse)
+geburtc <- geburt1 %>% dplyr::select(where(is.numeric))
+geburtc[is.na(geburtc)] <- 0
+
+## cormat : matrix of the correlation coefficients
+Corr_Results <- CorrMatrixtable(round(cor(geburtc), 3))
+Corr_Results_out <- Corr_Results[Corr_Results$cor>0.9,]
+rownames(Corr_Results_out) <- c(1:nrow(Corr_Results_out))
+
+library(kableExtra)
+kable(Corr_Results_out, 
+      caption = "Correlation of variables greater than 0.9", format = "html") %>% 
+  kable_styling(latex_options = "striped")
+
+## Visualization: draw a correlogram
+library(GGally)
+ggcorr(geburtc[1:10], nbreaks=8, palette='PuOr', label=TRUE, label_size=4, size = 2) +
+  ggtitle("Correlation Matrix of the first 10 variables") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
