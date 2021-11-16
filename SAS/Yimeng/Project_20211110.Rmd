@@ -28,6 +28,7 @@ inst = lapply(pkgs, library, character.only = TRUE)
 ## 10/Nov 2h
 ## 12/Nov 2h
 ## 14/Nov 2h
+## 16/Nov 0.5h
 ```
 
 
@@ -247,6 +248,7 @@ Project1 <- Project1 %>%
   mutate(across(c(`ImpGrund[beruf]`,`ImpGrund[risiko]`,`ImpGrund[norm]`,
                   `ImpGrund[gesfam]`,`ImpGrund[sozum]`,`ImpGrund[gesell]`,
                   `ImpGrund[geswesent]`),FacFunb))
+
 Project1 <- Project1 %>%
   mutate(across(c(GesuZuK, GesuZuPsy),FacFunc))
 
@@ -456,18 +458,52 @@ ggplot(data = Project2) +
 
 
 
-## Explore the variable Probleme nach Geburt 
+# Modeling 
+
+## Full logistic model
+
+Following variables are included in the logistic model based on the above exploration:
+
+* age
+* Sex
+* KennErkr
+* Govtrust
+* `ImpGrund[risiko]`
+* `ImpGrund[norm]`
+* GesuZuK 
+* Schulab
+* zapaImpf
+* ImpfHistory
+* MediWork
 
 ```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
-# fit full model
-# fit.full <- glm(ynaffair ~ gender + age + yearsmarried + 
-#     children + religiousness + education + occupation + rating, 
-#     data = Affairs, family = "binomial")
-# summary(fit.full)
-#  
-# 
-# names(Project2)
+## fit full model 
+class(Project2$KennErkr)
+fit.full <- glm(ImpfZust ~ age + Sex + Govtrust+KennErkr+`ImpGrund[risiko]`+`ImpGrund[norm]`+GesuZuK+Schulab+zapaImpf+ImpfHistory + MediWork,
+    data = Project2, family=binomial())
+summary(fit.full)
 ```
 
 
+**Conclusion**: as seen, the model is overfitted
+
+
+## 
+
+
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+## fit full model 
+class(Project2$KennErkr)
+fit.full <- glm(ImpfZust ~ age + Sex + Govtrust+KennErkr+`ImpGrund[risiko]`+`ImpGrund[norm]`+GesuZuK+Schulab+zapaImpf+ImpfHistory + MediWork,
+    data = Project2, family=binomial())
+summary(fit.full)
+
+## Confidence intervall
+confint(fit.full)
+
+## 同线性回归一样，在逻辑斯蒂回 归中也可以算出VIF统计量
+library(car)
+vif(fit.full)
+```
  
