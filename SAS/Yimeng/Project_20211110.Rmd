@@ -1,0 +1,473 @@
+---
+title: "Geburtsdataset exploration"
+author: "Zehui Bai"
+date: 'Stand: `r format(Sys.time(), "%F %H:%M Uhr")`'
+output:
+  html_document:
+    df_print: paged
+    number_sections: no
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+  md_document:
+    toc: yes
+fontsize: 10pt
+editor_options:
+  chunk_output_type: console
+colorlinks: yes
+---
+
+```{r setup, include=FALSE, echo = FALSE,message = FALSE, error = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# load package
+pkgs = c("ggplot2", "ggcorrplot", "tidyverse")
+inst = lapply(pkgs, library, character.only = TRUE) 
+
+## 10/Nov 2h
+## 12/Nov 2h
+## 14/Nov 2h
+```
+
+
+
+ 
+
+# Data Exploration
+
+## Fragesetllung
+
+This project aims to explory the important factors to influence the 
+
+Question 4/3: Wurden Sie gegen Corona geimpft? (ImpfZust)
+
+## Selection of variables
+
+Following variable are selected from the questionares:
+
+* Perception of disease risk: 4/1; 4/2 (code)   
+    + Question 4/1: Kennen Sie Personen, die an Corona erkrankt sind? (PersoKenn)
+    + Question 4/2: Hatte mindestens eine dieser Personen einen schweren Krankheitsverlauf? (KennErkr)
+* Attitude towards vaccination (ImpGrund):
+    + Question 4/16: Warum haben/ wollen Sie sich gegen Corona impfen lassen? 
+        + ImpGrund[beruf]	Ich habe/ möchte mich aus beruflichen Gründen impfen lassen
+        + ImpGrund[risiko]	Ich möchte das Risiko einer Corona-Infektion verringern
+        + ImpGrund[norm]	Ich möchte schnell zum normalen Leben zurückkehren
+        + ImpGrund[gesfam]	Ich möchte die Gesundheit meiner Familie schützen
+        + ImpGrund[sozum]	Ich werde/ wurde von meinem sozialen Umfeld angetrieben
+        + ImpGrund[gesell]	Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt
+        + ImpGrund[geswesent]	Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt
+* One’s own health status: 
+    + Question 2/2: Wie schätzen Sie Ihren allgemeinen körperlichen Gesundheitszustand im Durchschnitt über die letzten sechs Monate ein? (GesuZuK)
+    + Question 2/3: Wie schätzen Sie Ihren allgemeinen psychischen Gesundheitszustand im Durchschnitt über die letzten sechs Monate ein? (GesuZuPsy)
+    + Question 2/4: Welche der folgenden Impfungen haben Sie bereits erhalten? 
+        + Anam[HepB]	Hepatitis B
+        + Anam[Fern]	Impfungen für Fernreisen (wie z.B. Japanische Enzephalitis, Gelbfieber, Typhus, Tollwut)
+        + Anam[Inf]	Influenza (mind. 1mal)
+        + Anam[Mas]	Masern
+        + Anam[Mum]	Mumps
+        + Anam[Roet]	Röteln
+        + Anam[Pol]	Polio (Kinderlähmung) 
+        + Anam[Nicht]	Ich bin mir über meinen Impfstatus nicht sicher
+        + Anam[Keine]	Ich habe keine der hier aufgelisteten Impfungen erhalten
+* Socio-demographic data: 
+    + Question 1/1: Bitte geben Sie Ihr Alter in Jahren an (Age)
+    + Question 2/1: Welchem Geschlecht fühlen Sie sich zugehörig (Sex)
+* Socio-economic status 
+    + Question 8/1: Was ist Ihr höchster Schulabschluss (Schulab)
+    + Question 8/2: Was ist Ihr höchster beruflicher Abschluss? (BerufAb) 
+    + Question 8/3: **too complicated and deleted**
+    + Question 8/4: Sind/ Waren Sie beruflich im Gesundheitswesen tätig? (TaetGes)
+    + Question 8/5: In welchem Bereich sind/ waren Sie tätig? (TaetGesBer)
+* Access to health information 
+    + Question 6/5: Wie oft informieren Sie sich bewusst über Corona? (ZeitInfo)
+* Trust in government 
+    + Question 5/8: Wie zufrieden sind Sie mit der Arbeit der folgenden Einrichtungen während der Corona-Pandemie (in score transform)
+* Compliance with health professionals 
+    + Question 5/4: Wie schätzen Sie die Qualität der Behandlung dieses Arztes/dieser Ärztin im Allgemeinen ein? (zapaQualBe)
+    + Question 5/5: Werden/Wurden Sie durch einen Arzt/eine Ärztin über die Corona Impfungen aufgeklärt? (zapaImpf)
+    + Question 5/6: Haben sie aktiv nach einer Aufklärung gefragt? (AufklAkt)
+    + Question 5/7: Waren Sie zufrieden mit der Aufklärung über die Impfung (ZufriedAufk)
+* Internet and social media (convert the variable)
+    + Question 6/4: Bitte geben Sie an, wie oft Sie mit den folgenden Personengruppen über Corona sprechen. (**not find**)
+    
+    
+## Variable convertion
+
+For the Question "Question 4/16: Warum haben/ wollen Sie sich gegen Corona impfen lassen?", the 7 sub questions will be regarded as seperate variables to explore the effects of different reason for vaccination.
+  + ImpGrund[beruf]	Ich habe/ möchte mich aus beruflichen Gründen impfen lassen
+  + ImpGrund[risiko]	Ich möchte das Risiko einer Corona-Infektion verringern
+  + ImpGrund[norm]	Ich möchte schnell zum normalen Leben zurückkehren
+  + ImpGrund[gesfam]	Ich möchte die Gesundheit meiner Familie schützen
+  + ImpGrund[sozum]	Ich werde/ wurde von meinem sozialen Umfeld angetrieben
+  + ImpGrund[gesell]	Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt
+  + ImpGrund[geswesent]	Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt
+        
+For the Question "Question 2/4: Welche der folgenden Impfungen haben Sie bereits erhalten?", this Question will be converted to "Haben Sie andere Impfstoffe erhalten?" (ImpfHistory) If the participant has received any following vaccines (Check the following vaccine options), the answer of above question shoulb be "Ja".
+    * Hepatitis B
+    * Impfungen für Fernreisen (wie z.B. Japanische Enzephalitis, Gelbfieber, Typhus, Tollwut)
+    * Influenza (mind. 1mal)
+    * Masern
+    * Mumps
+    * Röteln
+    * Polio (Kinderlähmung) 
+Otherwise, the check of following two options will conclude "Nein" as answer.
+    * Ich bin mir über meinen Impfstatus nicht sicher
+    * Ich habe keine der hier aufgelisteten Impfungen erhalten
+
+For the Question "Question 5/8: Wie zufrieden sind Sie mit der Arbeit der folgenden Einrichtungen während der Corona-Pandemie", the answer of following government agencies will not be analyzed as categorical variables, `GesuwiEin[Bund]`,`GesuwiEin[BuGe]`,`GesuwiEin[PolBund]`,`GesuwiEin[Gesu]`,`GesuwiEin[Pei]`,`GesuwiEin[Rki]`,`GesuwiEin[Stiko]`, but will be converted into scores. The correspondence between categories and scores is as follows 
+
+* sehr zufrieden -- 50	
+* eher zufrieden -- 25
+* eher unzufrieden -- -25	
+* sehr unzufrieden -- -50
+* kann dazu nichts sagen -- 0
+
+For each particicant, the mean score of the 7 government agencies will be calculated as the score of satisfaction with the government agency, which indicates the degree of trust in the government. (Govtrust)
+
+
+For the Question "In welchem Bereich sind/ waren Sie tätig? (TaetGesBer)", This variable is transformed into a dichotomous variable, that is, does the participant's work in medical-related field, Ob der Teilnehmer in einem medizinnahen Bereich tätig ist (MediWork). Checking the following options is regarded as "Ja", that is, engaged in medical-related fields, 
+
+* Medizinisches Personal
+* Pharmazie
+* Gesundheitsamt
+* Krankenversicherung
+
+otherwise the answer is "Nein".
+
+
+## Count the missing data 
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+library(readxl)
+Project_full <- read_excel("C:/Users/zbai/Documents/GitHub/R-Projects/SAS/Yimeng/results-text.xlsx")
+
+ 
+## select variables
+Project1 <- subset(Project_full,
+                   select = c(ImpfZust,
+                              PersoKenn,KennErkr,
+                              `ImpGrund[beruf]`,`ImpGrund[risiko]`,`ImpGrund[norm]`,
+                              `ImpGrund[gesfam]`,`ImpGrund[sozum]`,`ImpGrund[gesell]`,
+                              `ImpGrund[geswesent]`,
+                              GesuZuK,GesuZuPsy,`Anam[HepB]`,`Anam[Fern]`,
+                              `Anam[Inf]`,`Anam[Mas]`,`Anam[Mum]`,`Anam[Roet]`,
+                              `Anam[Pol]`,`Anam[Nicht]`,`Anam[Keine]`,
+                              Sex, age,
+                              Schulab, BerufAb, TaetGes, 
+                              `TaetGesBer[1]`,`TaetGesBer[2]`,`TaetGesBer[3]`,
+                              `TaetGesBer[4]`,`TaetGesBer[5]`,`TaetGesBer[other]`,
+                              ZeitInfo,
+                              `GesuwiEin[Bund]`,`GesuwiEin[BuGe]`,`GesuwiEin[PolBund]`,
+                              `GesuwiEin[Gesu]`,`GesuwiEin[Pei]`,
+                              `GesuwiEin[Rki]`,`GesuwiEin[Stiko]`,
+                              zapaQualBe,	zapaImpf, AufklAkt, ZufriedAufk))
+
+Project1$ImpfHistory <- ifelse(Project1$`Anam[HepB]`=="Ja"|Project1$`Anam[Fern]`=="Ja"|
+                                 Project1$`Anam[Inf]`=="Ja"|Project1$`Anam[Mas]`=="Ja"|
+                                 Project1$`Anam[Mum]`=="Ja"|Project1$`Anam[Roet]`=="Ja"|
+                                 Project1$`Anam[Pol]`=="Ja","Ja",ifelse(Project1$`Anam[Nicht]`=="Ja"|Project1$`Anam[Keine]`=="Ja","Nein",NA))
+
+Project1$MediWork <- ifelse(Project1$`TaetGesBer[1]`=="Ja"|Project1$`TaetGesBer[3]`=="Ja"|
+                              Project1$`TaetGesBer[4]`=="Ja"|Project1$`TaetGesBer[5]`=="Ja", "Ja",
+                            ifelse(Project1$`TaetGesBer[2]`=="Ja"|Project1$`TaetGesBer[other]`=="Ja","Nein",NA))
+
+
+   
+FacFuna <- function(var){
+  factor(var, levels = c("Ja", "Nein"), labels = c("Ja", "Nein"), exclude = NULL)
+}
+FacFunb <- function(var){
+  factor(var, 
+         levels = c("trifft nicht zu", "trifft eher nicht zu", 
+                    "trifft eher zu", "trifft zu"), 
+         labels = c("trifft nicht zu", "trifft eher nicht zu", 
+                    "trifft eher zu", "trifft zu"))
+}
+FacFunc <- function(var){
+  factor(var, 
+         levels = c("Schlecht", "Weniger gut", "Gut", "Sehr gut"),
+         labels = c("Schlecht", "Weniger gut", "Gut", "Sehr gut"))
+}
+
+ScoreFun <- function(var){
+  ifelse(var == "sehr unzufrieden", -50, ifelse(
+    var == "eher unzufrieden", -25, ifelse(
+      var == "kann dazu nichts sagen", 0, ifelse(
+        var == "eher zufrieden", 25, ifelse(
+          var == "sehr zufrieden", 50, NA
+        )
+      )
+    )
+  ))
+}
+
+
+## Score
+Project1$Score_Bund <- ScoreFun(Project1$`GesuwiEin[Bund]`)
+Project1$Score_BuGe <- ScoreFun(Project1$`GesuwiEin[BuGe]`)
+Project1$Score_PolBund <- ScoreFun(Project1$`GesuwiEin[PolBund]`)
+Project1$Score_Pei <- ScoreFun(Project1$`GesuwiEin[Pei]`)
+Project1$Score_Gesu <- ScoreFun(Project1$`GesuwiEin[Gesu]`)
+Project1$Score_Rki <- ScoreFun(Project1$`GesuwiEin[Rki]`) 
+Project1$Score_Stiko <- ScoreFun(Project1$`GesuwiEin[Stiko]`)
+
+## Replace the missing values with 0
+Project1$Score_Bund[is.na(Project1$Score_Bund)] <- 0
+Project1$Score_BuGe[is.na(Project1$Score_BuGe)] <- 0
+Project1$Score_PolBund[is.na(Project1$Score_PolBund)] <- 0
+Project1$Score_Pei[is.na(Project1$Score_Pei)] <- 0
+Project1$Score_Gesu[is.na(Project1$Score_Gesu)] <- 0
+Project1$Score_Rki[is.na(Project1$Score_Rki)] <- 0
+Project1$Score_Stiko[is.na(Project1$Score_Stiko)] <- 0
+
+Project1$Govtrust <- (Project1$Score_Bund + Project1$Score_BuGe + Project1$Score_PolBund + 
+                        Project1$Score_Pei + Project1$Score_Rki + Project1$Score_Stiko + Project1$Score_Gesu)/7
+
+### Format the variables 
+Project1$Sex <- as.factor(Project1$Sex)
+Project1$Schulab <- as.factor(Project1$Schulab)
+Project1$BerufAb <- as.factor(Project1$BerufAb)
+Project1$TaetGes <- as.factor(Project1$TaetGes)
+Project1$ZeitInfo <- as.factor(Project1$ZeitInfo)
+Project1$zapaQualBe <- as.factor(Project1$zapaQualBe)
+Project1$ZufriedAufk <- as.factor(Project1$ZufriedAufk)
+
+
+Project1 <- Project1 %>%
+  mutate(across(c(ImpfZust,PersoKenn,KennErkr,ImpfHistory,
+                  MediWork, zapaImpf, AufklAkt),FacFuna))
+# Project1$ImpfZust <- factor(Project1$ImpfZust, 
+#                             levels = levels(addNA(Project1$ImpfZust)), 
+#                             labels = c(levels(Project1$ImpfZust), "Missing"), 
+#                             exclude = NULL)
+  
+Project1 <- Project1 %>%
+  mutate(across(c(`ImpGrund[beruf]`,`ImpGrund[risiko]`,`ImpGrund[norm]`,
+                  `ImpGrund[gesfam]`,`ImpGrund[sozum]`,`ImpGrund[gesell]`,
+                  `ImpGrund[geswesent]`),FacFunb))
+Project1 <- Project1 %>%
+  mutate(across(c(GesuZuK, GesuZuPsy),FacFunc))
+
+Project2 <- subset(Project1, select = -c(`Anam[HepB]`,`Anam[Fern]`,`Anam[Inf]`,`Anam[Mas]`,
+                                         `Anam[Mum]`,`Anam[Roet]`,`Anam[Pol]`,`Anam[Nicht]`,`Anam[Keine]`,
+                                         `TaetGesBer[1]`,`TaetGesBer[2]`,`TaetGesBer[3]`,
+                                         `TaetGesBer[4]`,`TaetGesBer[5]`,`TaetGesBer[other]`,
+                                         `GesuwiEin[Bund]`,`GesuwiEin[BuGe]`,`GesuwiEin[PolBund]`,
+                                         `GesuwiEin[Gesu]`,`GesuwiEin[Pei]`,`GesuwiEin[Rki]`,
+                                         `GesuwiEin[Stiko]`,
+                                         Score_Bund, Score_BuGe, Score_PolBund, 
+                                         Score_Pei, Score_Gesu, Score_Rki, Score_Stiko))
+
+library(kableExtra)
+kable(sapply(Project2,function(x)sum(is.na(x))), 
+      caption = "Missing data among variables", format = "html") %>% 
+  kable_styling(latex_options = "striped")
+```
+
+## Descriptive Statistics
+
+
+The default summary statistics for continuous variables will be the number of non-missing observations (n), the number of missing observation (miss) as well as arithmetic mean, standard deviation (SD), lower quartile (Q1), upper quartile (Q3), minimum (min), median, and maximum (max), the analysis will be conducted grouped by variale "ImpfZust", the 5 missing values of ImpfZust will be ignored. Moreover, the p value based on the t-test given 0.05 significant level will be provided.
+
+For categorical variables, the absolute frequencies (n) and relative frequencies (percentage in %) of patients by category will be the default summary presentation, and, if applicable, the number of missing values is provided in a “missing” category. The analysis will be conducted grouped by variale "ImpfZust", the 5 missing values of ImpfZust will be ignored. Furthermore, the p value based on the fisher-test given 0.05 significant level will be provided.
+
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+## HTML Output
+library(papeR)
+Project_DecConti <- papeR::summarize(Project2, type = "numeric", group = "ImpfZust", show.NAs = T,digits.pval = 3, smallest.pval = 0.05)
+rownames(Project_DecConti) <- NULL
+kable(Project_DecConti, caption = "Descriptive statistics of continious variables", format = "html") %>% 
+  kable_styling(latex_options = "striped")
+
+Project_DecCate1 <- papeR::summarize(Project2[-16], 
+                                     type = "factor", 
+                                     group = "ImpfZust", 
+                                     smallest.pval = 0.05)
+names(Project_DecCate1) <- c("Variable","Category","A",
+                             "N (geimpft)","% (geimpft)","B",
+                             "N (nicht geimpft)","% (nicht geimpft)","C",
+                             "N (missing)","% (missing)","D","p.value")
+Project_DecCate1 <- Project_DecCate1[-12]
+
+Project_DecCate2 <- papeR::summarize(Project2[c(1,16)], 
+                                     type = "factor", 
+                                     group = "ImpfZust", 
+                                     test = F,
+                                     smallest.pval = 0.05)
+
+names(Project_DecCate2) <- c("Variable","Category","A",
+                             "N (geimpft)","% (geimpft)","B",
+                             "N (nicht geimpft)","% (nicht geimpft)","C",
+                             "N (missing)","% (missing)")
+xtable <- table(Project2[c(1,16)])
+BerufAb_p <- fisher.test(xtable,simulate.p.value=TRUE)
+BerufAb_p <- "<0.05"
+Project_DecCate2$p.value <- BerufAb_p
+Project_DecCate2$p.value[-1] <- ""
+
+
+
+Project_DecCate <- rbind(Project_DecCate1, Project_DecCate2)
+Project_DecCate <- Project_DecCate[-c(10:11)]
+
+names(Project_DecCate) <- c("Variable","Category"," ",
+                             "N (geimpft)","% (geimpft)"," ",
+                             "N (nicht geimpft)","% (nicht geimpft)"," ","p.value")
+rownames(Project_DecCate) <- NULL
+kable(Project_DecCate, caption = "Descriptive statistics of categorical variables", format = "html") %>% 
+  kable_styling(latex_options = "striped")
+```
+
+
+## Visualization
+ 
+    
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+theme_set(theme_bw())
+
+ggplot(data = Project2) +
+  geom_histogram(mapping = aes(x = age, fill=ImpfZust),
+                 binwidth = 2, col="black", size=.1)+
+  labs(title="Histogram to explore the citinious variables",
+       subtitle="Question 1/1: Bitte geben Sie Ihr Alter in Jahren an")
+
+ggplot(data = Project2) +
+  geom_histogram(mapping = aes(x = Govtrust, fill=ImpfZust),
+                 binwidth = 3.5, col="black", size=.1)+
+  labs(title="Histogram to explore the citinious variables",
+       subtitle="Question 5/8: Wie zufrieden sind Sie mit der Arbeit der folgenden Einrichtungen während der Corona-Pandemie (in score transform)?")
+  
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x = PersoKenn, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Question 4/1: Kennen Sie Personen, die an Corona erkrankt sind?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x = KennErkr, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Question 4/2: Hatte mindestens eine dieser Personen einen schweren Krankheitsverlauf?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =`ImpGrund[beruf]` , fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Impfung Ground: Ich habe/ möchte mich aus beruflichen Gründen impfen lassen")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =`ImpGrund[risiko]` , fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Impfung Ground: Ich möchte das Risiko einer Corona-Infektion verringern")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =`ImpGrund[norm]` , fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Impfung Ground: Ich möchte schnell zum normalen Leben zurückkehren")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =`ImpGrund[gesfam]` , fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Impfung Ground: Ich möchte die Gesundheit meiner Familie schützen")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =`ImpGrund[sozum]` , fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Impfung Ground: Ich werde/ wurde von meinem sozialen Umfeld angetrieben")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =`ImpGrund[gesell]` , fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Impfung Ground: Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =`ImpGrund[geswesent]` , fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Impfung Ground: Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =GesuZuK, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Wie schätzen Sie Ihren allgemeinen körperlichen Gesundheitszustand im Durchschnitt über die letzten sechs Monate ein?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =GesuZuPsy, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Wie schätzen Sie Ihren allgemeinen psychischen Gesundheitszustand im Durchschnitt über die letzten sechs Monate ein?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =ImpfHistory, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Haben Sie andere Impfstoffe erhalten?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =Sex, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Welchem Geschlecht fühlen Sie sich zugehörig?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =Schulab, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Question 8/1: Was ist Ihr höchster Schulabschluss?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =BerufAb, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Question 8/2: Was ist Ihr höchster beruflicher Abschluss?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =TaetGes, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Question 8/4: Sind/ Waren Sie beruflich im Gesundheitswesen tätig?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =MediWork, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Ob der Teilnehmer in einem medizinnahen Bereich tätig ist?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =ZeitInfo, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Question 6/5: Wie oft informieren Sie sich bewusst über Corona?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =zapaQualBe, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Question 5/4: Wie schätzen Sie die Qualität der Behandlung dieses Arztes/dieser Ärztin im Allgemeinen ein?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =zapaImpf, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Question 5/5: Werden/Wurden Sie durch einen Arzt/eine Ärztin über die Corona Impfungen aufgeklärt?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =AufklAkt, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Question 5/6: Haben sie aktiv nach einer Aufklärung gefragt?")
+
+ggplot(data = Project2) +
+  geom_bar(mapping = aes(x =ZufriedAufk, fill =ImpfZust), width=.7, position = "dodge")+
+  labs(title="Barplot to explore the categorical variables",
+       subtitle="Question 5/7: Waren Sie zufrieden mit der Aufklärung über die Impfung?")
+```
+
+
+    
+
+
+
+## Explore the variable Probleme nach Geburt 
+
+```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
+# fit full model
+# fit.full <- glm(ynaffair ~ gender + age + yearsmarried + 
+#     children + religiousness + education + occupation + rating, 
+#     data = Affairs, family = "binomial")
+# summary(fit.full)
+#  
+# 
+# names(Project2)
+```
+
+
+ 

@@ -1,0 +1,113 @@
+---
+title: "Geburtsdataset analysis"
+author: "Zehui Bai"
+date: 'Stand: `r format(Sys.time(), "%F %H:%M Uhr")`'
+output:
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: yes
+  md_document:
+    toc: yes
+  html_document:
+    df_print: paged
+    number_sections: no
+    toc: yes
+    toc_float: yes
+fontsize: 10pt
+editor_options:
+  chunk_output_type: console
+colorlinks: yes
+---
+
+```{r setup, include=FALSE, echo = FALSE,message = FALSE, error = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# load package
+pkgs = c("ggplot2", "ggcorrplot")
+inst = lapply(pkgs, library, character.only = TRUE) 
+```
+
+## Descriptive statistics of variables
+
+### Descriptive statistics for Gewichtszunahme, Mutter Alter, Mutter BMI
+
+```{r echo =F, error=FALSE, message=FALSE, warning=FALSE}
+knitr::include_graphics("./Yimeng_Plots/M7_0a.png")
+```
+
+
+### Descriptive statistics for Geschlecht
+
+```{r echo =F, error=FALSE, message=FALSE, warning=FALSE}
+knitr::include_graphics("./Yimeng_Plots/M7_0b.png")
+```
+
+### Descriptive statistics for Mutter: Schulabschluss
+
+```{r echo =F, error=FALSE, message=FALSE, warning=FALSE}
+knitr::include_graphics("./Yimeng_Plots/M7_0c.png")
+```
+
+### Descriptive statistics for Monatl. Haushaltsnettoeinkommen
+
+```{r echo =F, error=FALSE, message=FALSE, warning=FALSE}
+knitr::include_graphics("./Yimeng_Plots/M7_0d.png")
+```
+
+### Descriptive statistics for Ost/West geografisch
+
+```{r echo =F, error=FALSE, message=FALSE, warning=FALSE}
+knitr::include_graphics("./Yimeng_Plots/M7_0e.png")
+```
+
+### Nach Geburt 
+
+|                                             | N    | %     |
+|---------------------------------------------|------|-------|
+| Probleme Nach Geburt                        | 4122 |       |
+| Atmungsschwierigkeiten, Anpassungsstörungen | 645  | 15.65 |
+| Infektion                                   | 450  | 10.92 |
+| Gelbsucht                                   | 2112 | 51.24 |
+| Untergewicht, Frühgeburt                    | 763  | 18.51 |
+| Sonstige                                    | 947  | 22.97 |
+| Kinderklinik                                | 1616 | 39.20 |
+
+
+ 
+## Full model
+
+* 并未发现Gewichtszunahme in Schwangerschaft (kg)是Probleme nach Geburt的显著影响因素
+* 但是发现了Mutter: Body-Mass-Index (kg/qm)对Probleme nach Geburt影响很大
+* 显然Ost/West geografisch对Probleme nach Geburt无影响，从模型中提出
+
+下表是全模型的分析结果
+
+```{r echo =F, error=FALSE, message=FALSE, warning=FALSE}
+knitr::include_graphics("./Yimeng_Plots/M7_1.png")
+```
+
+
+## New Model
+
+结果和简单的解释如下
+
+* 显然Sex具有显著性，女孩得病的风险更高
+* 母亲受教育水平越高，孩子得病风险相对于没有毕业的人的孩子越小
+* 家庭收入影响不显著，但有意思的是特别高收入人群的孩子相反更容易生病 （>= 5.000 € vs <500 €，e093 4.000 - < 5.000 € vs <500 €）但是low置信区间接近1，因此不能说明有普遍效应
+* 母亲的bmi对孩子的健康有所影响，bmi越高，生病可能性越大
+
+
+```{r echo =F, error=FALSE, message=FALSE, warning=FALSE}
+knitr::include_graphics("./Yimeng_Plots/M7_2.png")
+knitr::include_graphics("./Yimeng_Plots/M7_4.png")
+knitr::include_graphics("./Yimeng_Plots/M7_5.png")
+knitr::include_graphics("./Yimeng_Plots/M7_3.png")
+```
+
+
+
+
+
+
+
