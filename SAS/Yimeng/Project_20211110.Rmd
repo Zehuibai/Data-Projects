@@ -1,7 +1,6 @@
 ---
-title: "Geburtsdataset exploration"
+title: "Corona project exploration (Draft Verion 0.1)"
 author: "Zehui Bai"
-date: 'Stand: `r format(Sys.time(), "%F %H:%M Uhr")`'
 output:
   html_document:
     df_print: paged
@@ -29,6 +28,7 @@ inst = lapply(pkgs, library, character.only = TRUE)
 ## 12/Nov 2h
 ## 14/Nov 2h
 ## 16/Nov 0.5h
+## 17/Nov 2.5h
 ```
 
 
@@ -325,7 +325,8 @@ kable(Project_DecCate, caption = "Descriptive statistics of categorical variable
 
 
 ## Visualization
- 
+
+### Age
     
 ```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 theme_set(theme_bw())
@@ -335,118 +336,210 @@ ggplot(data = Project2) +
                  binwidth = 2, col="black", size=.1)+
   labs(title="Histogram to explore the citinious variables",
        subtitle="Question 1/1: Bitte geben Sie Ihr Alter in Jahren an")
+```
 
+### Govtrust
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_histogram(mapping = aes(x = Govtrust, fill=ImpfZust),
                  binwidth = 3.5, col="black", size=.1)+
   labs(title="Histogram to explore the citinious variables",
        subtitle="Question 5/8: Wie zufrieden sind Sie mit der Arbeit der folgenden Einrichtungen während der Corona-Pandemie (in score transform)?")
-  
+```
+
+### PersoKenn
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x = PersoKenn, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Question 4/1: Kennen Sie Personen, die an Corona erkrankt sind?")
+```
 
+### KennErkr
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x = KennErkr, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Question 4/2: Hatte mindestens eine dieser Personen einen schweren Krankheitsverlauf?")
+```
 
+### ImpGrund[beruf]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =`ImpGrund[beruf]` , fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Impfung Ground: Ich habe/ möchte mich aus beruflichen Gründen impfen lassen")
+```
 
+### ImpGrund[risiko]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =`ImpGrund[risiko]` , fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Impfung Ground: Ich möchte das Risiko einer Corona-Infektion verringern")
+```
 
+### ImpGrund[norm]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =`ImpGrund[norm]` , fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Impfung Ground: Ich möchte schnell zum normalen Leben zurückkehren")
+```
 
+### ImpGrund[gesfam]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =`ImpGrund[gesfam]` , fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Impfung Ground: Ich möchte die Gesundheit meiner Familie schützen")
+```
 
+### ImpGrund[sozum]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =`ImpGrund[sozum]` , fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Impfung Ground: Ich werde/ wurde von meinem sozialen Umfeld angetrieben")
+```
 
+### ImpGrund[gesell]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =`ImpGrund[gesell]` , fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Impfung Ground: Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt")
+```
 
+### ImpGrund[geswesent]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =`ImpGrund[geswesent]` , fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Impfung Ground: Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt")
+```
 
+### GesuZuK
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =GesuZuK, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Wie schätzen Sie Ihren allgemeinen körperlichen Gesundheitszustand im Durchschnitt über die letzten sechs Monate ein?")
+```
 
+### GesuZuPsy
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =GesuZuPsy, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Wie schätzen Sie Ihren allgemeinen psychischen Gesundheitszustand im Durchschnitt über die letzten sechs Monate ein?")
+```
 
+### ImpfHistory
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =ImpfHistory, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Haben Sie andere Impfstoffe erhalten?")
+```
 
+### Sex
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =Sex, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Welchem Geschlecht fühlen Sie sich zugehörig?")
+```
 
+### Schulab
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =Schulab, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Question 8/1: Was ist Ihr höchster Schulabschluss?")
+```
 
+### BerufAb
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =BerufAb, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Question 8/2: Was ist Ihr höchster beruflicher Abschluss?")
+```
 
+### TaetGes
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =TaetGes, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Question 8/4: Sind/ Waren Sie beruflich im Gesundheitswesen tätig?")
+```
 
+### MediWork
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =MediWork, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Ob der Teilnehmer in einem medizinnahen Bereich tätig ist?")
+```
 
+### ZeitInfo
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =ZeitInfo, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Question 6/5: Wie oft informieren Sie sich bewusst über Corona?")
+```
 
+### zapaQualBe
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =zapaQualBe, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Question 5/4: Wie schätzen Sie die Qualität der Behandlung dieses Arztes/dieser Ärztin im Allgemeinen ein?")
+```
 
+### zapaImpf
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =zapaImpf, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Question 5/5: Werden/Wurden Sie durch einen Arzt/eine Ärztin über die Corona Impfungen aufgeklärt?")
+```
 
+### AufklAkt
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =AufklAkt, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
        subtitle="Question 5/6: Haben sie aktiv nach einer Aufklärung gefragt?")
+```
 
+### ZufriedAufk
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
 ggplot(data = Project2) +
   geom_bar(mapping = aes(x =ZufriedAufk, fill =ImpfZust), width=.7, position = "dodge")+
   labs(title="Barplot to explore the categorical variables",
@@ -476,34 +569,359 @@ Following variables are included in the logistic model based on the above explor
 * ImpfHistory
 * MediWork
 
-```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
-## fit full model 
-class(Project2$KennErkr)
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+## fit full model  
 fit.full <- glm(ImpfZust ~ age + Sex + Govtrust+KennErkr+`ImpGrund[risiko]`+`ImpGrund[norm]`+GesuZuK+Schulab+zapaImpf+ImpfHistory + MediWork,
     data = Project2, family=binomial())
-summary(fit.full)
+
+
+library(sjPlot)
+tab_model(fit.full,
+          show.se = T,
+          title="Logistic results from full model")
+
+
+kable(confint(fit.full), caption = "Confidence intervall of estimates", format = "html") %>% 
+  kable_styling(latex_options = "striped")
+
+
+
+
+## The variance inflation factor (VIF) is a measure of the severity of multiple collinearity in a multiple linear regression model
+library(car)
+kable(vif(fit.full), caption = "variance inflation factor (VIF)", format = "html") %>% 
+  kable_styling(latex_options = "striped")
 ```
 
 
 **Conclusion**: as seen, the model is overfitted
 
 
-## 
+## Sub model: 
 
+### Intro
 
+Remove high collinearity factor based on variance inflation factor (VIF)
 
-```{r,echo = T,message = FALSE, error = FALSE, warning = FALSE}
-## fit full model 
-class(Project2$KennErkr)
-fit.full <- glm(ImpfZust ~ age + Sex + Govtrust+KennErkr+`ImpGrund[risiko]`+`ImpGrund[norm]`+GesuZuK+Schulab+zapaImpf+ImpfHistory + MediWork,
-    data = Project2, family=binomial())
-summary(fit.full)
+The variance inflation factor (VIF) is a measure of the severity of multiple collinearity in a multiple linear regression model, remove the variabele `ImpGrund[norm]` from the full model
 
-## Confidence intervall
-confint(fit.full)
+`Sex` `ImpGrund[risiko]` has high SD and will be removed
 
-## 同线性回归一样，在逻辑斯蒂回 归中也可以算出VIF统计量
-library(car)
-vif(fit.full)
+Odds ratio of `Schulab`, `ImpfHistory`, `MediWork` fast 0, remove
+
+Model: `ImpfZust ~ age  + Govtrust+KennErkr+zapaImpf`
+
+### Result and Plot 
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+fit.sub1 <- glm(ImpfZust ~ age  + Govtrust+KennErkr+zapaImpf,
+                data = Project2, family=binomial())
+tab_model(fit.sub1,
+          show.se = T,
+          title="Logistic results from sub model")
+
+plot_model(fit.sub1, colors = "black",
+           title="Odds ratios plot from sub model")
 ```
+
+
+### Conclusion
+
+**Conclusion**: as seen, the model seems nomal, `age` and `Govtrust`, `zapaImpf` have significant effect of impfung
+
+$$
+\frac{\mathrm{P}\left(Impfung=Nein \right)}{\mathrm{P}\left(Impfung=Ja\right)}=\exp \left(\beta_{0}\right) \cdot \exp \left(x_{i 1} \beta_{1}\right) \cdot \ldots \cdot \exp \left(x_{i k} \beta_{k}\right)
+$$
+* The older the age, the possibility of vaccination will be slightly reduced
+* The higher the trust in the government, the more likely to be vaccinated
+
+**In the following exploration, the continuous variables `age` and `Govtrust` are retained**
+
+
+## Model: Perception of disease risk
+
+KennErkr and PersoKenn have strong correlation and cannot be placed in the model. The following two models are designed to explore the roles of KennErkr and PersoKenn separately
+
+Models:
+
+* `ImpfZust ~ age  + Govtrust + KennErkr`
+* `ImpfZust ~ age  + Govtrust + PersoKenn`
+
+
+
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+fit.sub3a <- glm(ImpfZust ~ age  + Govtrust + KennErkr,
+                data = Project2, family=binomial()) 
+
+fit.sub3b <- glm(ImpfZust ~ age  + Govtrust + PersoKenn,
+                data = Project2, family=binomial())
+tab_model(fit.sub3a,fit.sub3b,
+          show.se = T,
+          title="Logistic results from sub model: Perception of disease risk")
+```
+
+
+## Model: Attitude towards vaccination
+
+The following series of models are designed to explore the impact of 7 different attitudes from "Question 4/16: Warum haben/ wollen Sie sich gegen Corona impfen lassen" on vaccination.
+
+
+Models:
+
+* `ImpfZust ~ age  + Govtrust + ImpGrund[beruf]`
+* `ImpfZust ~ age  + Govtrust + ImpGrund[risiko]`
+* `ImpfZust ~ age  + Govtrust + ImpGrund[norm]`
+* `ImpfZust ~ age  + Govtrust + ImpGrund[gesfam]`
+* `ImpfZust ~ age  + Govtrust + ImpGrund[sozum]`
+* `ImpfZust ~ age  + Govtrust + ImpGrund[gesell]`
+* `ImpfZust ~ age  + Govtrust + ImpGrund[geswesent]`
+
+### ImpGrund[beruf]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+fit.sub4a <- glm(ImpfZust ~ age  + Govtrust + `ImpGrund[beruf]`, data = Project2, family=binomial()) 
+fit.sub4b <- glm(ImpfZust ~ age  + Govtrust + `ImpGrund[risiko]`, data = Project2, family=binomial()) 
+fit.sub4c <- glm(ImpfZust ~ age  + Govtrust + `ImpGrund[norm]`, data = Project2, family=binomial())
+fit.sub4d <- glm(ImpfZust ~ age  + Govtrust + `ImpGrund[gesfam]`, data = Project2, family=binomial())
+fit.sub4e <- glm(ImpfZust ~ age  + Govtrust + `ImpGrund[sozum]`, data = Project2, family=binomial())
+fit.sub4f <- glm(ImpfZust ~ age  + Govtrust + `ImpGrund[gesell]`, data = Project2, family=binomial())
+fit.sub4g <- glm(ImpfZust ~ age  + Govtrust + `ImpGrund[geswesent]`, data = Project2, family=binomial())
  
+tab_model(fit.sub4a,
+          show.se = T,
+          title="Logistic results from sub model: Ich habe/ möchte mich aus beruflichen Gründen impfen lassen")
+```
+
+### ImpGrund[risiko]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub4b,
+          show.se = T,
+          title="Logistic results from sub model: Ich möchte das Risiko einer Corona-Infektion verringern")
+```
+
+### ImpGrund[norm]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub4c,
+          show.se = T,
+          title="Logistic results from sub model: Ich möchte schnell zum normalen Leben zurückkehren")
+```
+
+### ImpGrund[gesfam]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub4d,
+          show.se = T,
+          title="Logistic results from sub model: Ich möchte die Gesundheit meiner Familie schützen")
+```
+
+### ImpGrund[sozum]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub4e,
+          show.se = T,
+          title="Logistic results from sub model: Ich werde/ wurde von meinem sozialen Umfeld angetrieben")
+```
+
+### ImpGrund[gesell]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub4f,
+          show.se = T,
+          title="Logistic results from sub model: Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt")
+```
+
+### ImpGrund[geswesent]
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub4g,
+          show.se = T,
+          title="Logistic results from sub model: Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt")
+```
+
+
+
+
+## Model: One’s own health status
+
+The following series of models are designed to explore the impact of 
+
+* körperlichen Gesundheitszustand
+* psychischen Gesundheitszustand
+* Impfungen -geschicht
+
+on vaccination.
+
+
+Models:
+
+* `ImpfZust ~ age  + Govtrust + GesuZuK`
+* `ImpfZust ~ age  + Govtrust + GesuZuPsy`
+* `ImpfZust ~ age  + Govtrust + ImpfHistory`
+
+### GesuZuKGesuZuK
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+fit.sub5a <- glm(ImpfZust ~ age  + Govtrust + GesuZuK, data = Project2, family=binomial())  
+fit.sub5b <- glm(ImpfZust ~ age  + Govtrust + GesuZuPsy, data = Project2, family=binomial())  
+fit.sub5c <- glm(ImpfZust ~ age  + Govtrust + ImpfHistory, data = Project2, family=binomial())  
+ 
+tab_model(fit.sub5a,
+          show.se = T,
+          title="Logistic results from sub model: Wie schätzen Sie Ihren allgemeinen körperlichen Gesundheitszustand im Durchschnitt über die letzten sechs Monate ein?")
+```
+
+### GesuZuPsy
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub5b,
+          show.se = T,
+          title="Logistic results from sub model: Wie schätzen Sie Ihren allgemeinen psychischen Gesundheitszustand im Durchschnitt über die letzten sechs Monate ein?")
+```
+
+### ImpfHistory
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub5c,
+          show.se = T,
+          title="Logistic results from sub model: Haben Sie impfungen bereits erhalten?")
+plot_model(fit.sub5c, colors = "black",
+           title="Odds ratios plot from sub model")
+```
+
+**Conclusion**: People who have previously received other vaccines are more likely to get COVID vaccine
+
+
+
+## Model: Socio-economic status
+
+The following series of models are designed to explore the impact of 
+
+* höchster Schulabschluss
+* höchster beruflicher Abschluss
+* beruflich im Gesundheitswesen tätig
+* Medizinisches Bereich tätig
+
+on vaccination.
+
+
+Models:
+
+* `ImpfZust ~ age  + Govtrust + Schulab`
+* `ImpfZust ~ age  + Govtrust + BerufAb`
+* `ImpfZust ~ age  + Govtrust + TaetGes`
+* `ImpfZust ~ age  + Govtrust + MediWork`
+
+### Schulab
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+fit.sub6a <- glm(ImpfZust ~ age  + Govtrust + Schulab, data = Project2, family=binomial())  
+fit.sub6b <- glm(ImpfZust ~ age  + Govtrust + BerufAb, data = Project2, family=binomial())  
+fit.sub6c <- glm(ImpfZust ~ age  + Govtrust + TaetGes, data = Project2, family=binomial())  
+fit.sub6d <- glm(ImpfZust ~ age  + Govtrust + MediWork, data = Project2, family=binomial())  
+ 
+tab_model(fit.sub6a,
+          show.se = T,
+          title="Logistic results from sub model: Was ist Ihr höchster Schulabschluss")
+```
+
+### BerufAb
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub6b,
+          show.se = T,
+          title="Logistic results from sub model: Was ist Ihr höchster beruflicher Abschluss")
+plot_model(fit.sub6b, colors = "black",
+           title="Odds ratios plot from sub model")
+```
+
+### TaetGes
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub6c,
+          show.se = T,
+          title="Logistic results from sub model: Sind/ Waren Sie beruflich im Gesundheitswesen tätig?")
+```
+
+### MediWork
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub6d,
+          show.se = T,
+          title="Logistic results from sub model: Sind/ Waren Sie im medizinischen Bereich tätig")
+```
+
+
+## Model: Access to health information
+
+
+Model: `ImpfZust ~ age  + Govtrust + ZeitInfo`
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+fit.sub7 <- glm(ImpfZust ~ age  + Govtrust + ZeitInfo, data = Project2, family=binomial())  
+ 
+tab_model(fit.sub7,
+          show.se = T,
+          title="Logistic results from sub model: Wie oft informieren Sie sich bewusst über Corona?")
+```
+
+
+## Compliance with health professionals
+
+Models:
+
+* `ImpfZust ~ age  + Govtrust + zapaQualBe`
+* `ImpfZust ~ age  + Govtrust + zapaImpf`
+* `ImpfZust ~ age  + Govtrust + AufklAkt`
+* `ImpfZust ~ age  + Govtrust + ZufriedAufk`
+
+### zapaQualBe
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+fit.sub8a <- glm(ImpfZust ~ age  + Govtrust + zapaQualBe, data = Project2, family=binomial())  
+fit.sub8b <- glm(ImpfZust ~ age  + Govtrust + zapaImpf, data = Project2, family=binomial()) 
+fit.sub8c <- glm(ImpfZust ~ age  + Govtrust + AufklAkt, data = Project2, family=binomial()) 
+fit.sub8d <- glm(ImpfZust ~ age  + Govtrust + ZufriedAufk, data = Project2, family=binomial()) 
+ 
+tab_model(fit.sub8a,
+          show.se = T,
+          title="Logistic results from sub model: Wie schätzen Sie die Qualität der Behandlung dieses Arztes/dieser Ärztin im Allgemeinen ein?")
+plot_model(fit.sub8a, colors = "black",
+           title="Odds ratios plot from sub model")
+```
+
+### zapaImpf
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub8b,
+          show.se = T,
+          title="Logistic results from sub model: Werden/Wurden Sie durch einen Arzt/eine Ärztin über die Corona Impfungen aufgeklärt?")
+plot_model(fit.sub8b, colors = "black",
+           title="Odds ratios plot from sub model")
+```
+
+### AufklAkt
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub8c,
+          show.se = T,
+          title="Logistic results from sub model: Haben sie aktiv nach einer Aufklärung gefragt?")
+plot_model(fit.sub8c, colors = "black",
+           title="Odds ratios plot from sub model")
+```
+
+### ZufriedAufk
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+tab_model(fit.sub8d,
+          show.se = T,
+          title="Logistic results from sub model: Waren Sie zufrieden mit der Aufklärung über die Impfung ")
+
+plot_model(fit.sub8d, colors = "black",
+           title="Odds ratios plot from sub model")
+```
+
+
+**Conclusion**: factors of Compliance with health professionals are important to vaccination. 

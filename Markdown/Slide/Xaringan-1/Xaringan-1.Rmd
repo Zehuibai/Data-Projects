@@ -26,16 +26,193 @@ Image credit: [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Sharin
 ---
 class: center, middle
 
-# xaringan
 
-### /ʃaː.'riŋ.ɡan/
+
+
+
+
+
+
+
+
+# Herbstworkshop 
+
+
+* Welcome
+•	10:25 – 11:05 | Matthias Schmid (Bonn): Competing risks analysis for discrete time-to-event data
+•	11:05 – 11:30 | Sabrina Schmitt (Koblenz): Time-to-event analysis with competing risks accounting for cluster structures
+•	11:30 – 11:55 | Ann-Kathrin Ozga (Hamburg): Accelerated failure time models for semi-competing risk data with recurrent events
+•	11:55 – 13:00 | Lunch break
+•	13:00 – 13:25 | Marc Ditzhaus (Dortmund): How to deal with nonproportional hazards in factorial survival designs?
+•	13:25 – 13:50 | Alexander Seipp (Oldenburg): Accelerated failure time models for crossing survival curves
+•	13:50 – 14:15 | Christoph Wies (Darmstadt): Testing VIMPs for dependencies in random forest analyses
+•	14:15 – 14:30 | Coffee break
+•	14:30 – 15:10 | Andreas Wienke (Halle): Correlated random-effects models for clustered time-to-event data
+
+•	09:00 – 09:55 | AG session and elections
+•	10:00 – 10:40 | Niel Hens (Hasselt/Antwerp): Time-varying frailty models and the estimation of heterogeneities in transmission of infectious diseases
+•	10:40 – 11:05 | Maximilian Bardo (Göttingen): The Addams family of discrete frailty distributions for multivariate survival data
+•	11:05 – 11:30 | Markus Schepers (Mainz): How to model the spreading of infectious diseases using networks embedded into hyperbolic space?
+
+
+
+
+ 
 
 ---
-class: inverse, center, middle
+class: Content of the Herbstworkshop 
 
-# Get Started
+
+
+
+
+
+
+
+
+
+
+# Competing risks analysis for discrete time-to-event data
 
 ---
+
+# Source
+
+Joint work with Moritz Berger, Jan Beyersmann, Gerhard Tutz and Thomas Welchowski
+Based on
+
+Schmid M, Berger M (2021): Competing risks analysis for discrete time-to-event data. WIREs Computational Statistics 13:e1529.
+
+
+---
+
+# General Setting
+
+Observation times measured on a discrete time scale $t=1,2, \ldots, q$ (apply to both scenarios)
+
+
+**Scenario 1:**
+
+* Values of $t$ represent a set of fixed follow-up intervals $\left[a_{t-1}, a_{t}\right)$ with continuous boundaries $a_{0}=0<a_{1}<\ldots<a_{q}=\infty$
+* Examples: clinical and epidemiological studies, panel studies, 
+
+**Scenario 2:**
+
+* Intrinsically discrete time scale
+* Examples: time to pregnancy (observation time defined by number of menstrual cycles), university outcomes in educational research (observation time defined by number of semesters),
+
+---
+
+
+# Notation
+
+* $n$ independent individuals, $J$ possible target events
+* $\mathbf{x}_{i}=\left(x_{i 1}, \ldots, x_{i p}\right)^{\top}, i=1, \ldots, n:$ covariate vectors
+* $\rightarrow T_{i} \in\{1,2, \ldots, q\}:$ event time of individual $i$
+* $C_{i} \in\{1,2, \ldots, q\}:$ censoring time of individual $i$
+
+- Assumptions:
+    - $T_{i}$ and $C_{i}$ are independent ("random censoring")
+    - Censoring process does not depend on any parameters used to model the event times ( "non-informative censoring")
+    - In Scenario $1, T_{i}$ always precedes $C_{i}$ if both $T_{i}$ and $C_{i}$ occur in the same interval ("censoring at the end of the interval")
+
+* $\tilde{T}_{i}=\min \left(T_{i}, C_{i}\right)$ and $\Delta_{i}:=I\left(T_{i} \leq C_{i}\right):$ observation time and status indicator, respectively, of individual $i$
+* $\rightarrow \epsilon_{i} \in\{1, \ldots, J\}:$ event type of individual $i$ at $T_{i}$
+
+---
+
+# Definitions
+
+- Cumulative incidence function (CIF):
+$F_{j}\left(t \mid \mathbf{x}_{i}\right):=P\left(T_{i} \leq t, \epsilon_{i}=j \mid \mathbf{x}_{i}\right)$
+
+    * Defined for each $j \in\{1, \ldots, J\}$
+    * Bounded between 0 and $F_{j}\left(q \mid \mathbf{x}_{i}\right)=P\left(\epsilon_{i}=j \mid \mathbf{x}_{i}\right) \leq 1$
+
+- Cause-specific hazard function:
+$$
+\lambda_{j}\left(t \mid \mathbf{x}_{i}\right):=P\left(T_{i}=t, \epsilon_{i}=j \mid T_{i} \geq t, \mathbf{x}_{i}\right)
+$$
+
+    * Defined in terms of a probability
+
+- Overall hazard function:
+$$
+\lambda\left(t \mid \mathbf{x}_{i}\right):=P\left(T_{i}=t \mid T_{i} \geq t, \mathbf{x}_{i}\right)=\sum_{j=1}^{J} \lambda_{j}\left(t \mid \mathbf{x}_{i}\right)
+$$
+    * Conditional probability of experiencing any of the $J$ events at $t$
+
+- (Overall) survival function: $S\left(t \mid \mathbf{x}_{i}\right):=P\left(T_{i}>t \mid \mathbf{x}_{i}\right)=\prod_{t=1}^{q}\left(1-\lambda\left(t \mid \mathbf{x}_{i}\right)\right)$
+
+
+--- 
+
+
+# Discrete Cause-Specific Hazards Model
+
+- Model that relates the cause-specific hazard function to covariates
+- Parametric discrete cause-specific hazards model:
+$$
+\begin{array}{c}
+\lambda_{j}\left(t \mid \mathbf{x}_{i}\right)=\frac{\exp \left(\gamma_{0 t j}+\mathbf{x}_{i}^{\top} \gamma_{j}\right)}{1+\sum_{j=1}^{J} \exp \left(\gamma_{0 t j}+\mathbf{x}_{i}^{\top} \gamma_{j}\right)} \\
+j=1, \ldots, J, t=1, \ldots, q-1
+\end{array}
+$$
+- $\gamma_{01 j}, \ldots, \gamma_{0(q-1) j}$ : cause-specific baseline coefficients (factor variables)
+$\rightarrow \gamma_{j}:=\left(\gamma_{j 1}, \ldots, \gamma_{j p}\right)^{\top}:$ cause-specific vector of regression coefficients
+
+
+
+--- 
+
+# Interpretation
+
+Define conditional survival beyond $t$ by
+$$
+\lambda_{0}\left(t \mid \mathbf{x}_{i}\right):=P\left(T_{i}>t \mid T_{i} \geq t, \mathbf{x}_{i}\right)
+$$
+
+Then $\lambda_{j}\left(t \mid \mathbf{x}_{i}\right) / \lambda_{0}\left(t \mid \mathbf{x}_{i}\right)=\exp \left(\gamma_{0 t j}\right) \cdot \exp \left(\gamma_{j 1}\right)^{x_{1}} \cdots \exp \left(\gamma_{j p}\right)^{x_{p}}$
+$\Rightarrow$ Increase of covariate $x_{k}, k \in\{1, \ldots, p\}$, by one unit increases the cause-specific odds by the factor $\exp \left(\gamma_{j k}\right)$
+
+Equivalent to a multinomial logistic regression model with $J+1$ outcome categories and reference category "survival beyond $t$ "
+
+---
+
+# Likelihood Construction
+
+- Define binary variables
+$$
+\begin{aligned}
+\mathbf{y}_{i t}^{\top}=&\left\lfloor\left(y_{i t 0}, y_{i t 1}, \ldots, y_{i} \tilde{T}_{i} \epsilon_{i}, \ldots, y_{i t}\right)\right.\\
+&:=\left\{\begin{array}{ll}
+(1,0, \ldots, 0, \ldots, 0), & \text { if } t<\tilde{T}_{i} \\
+(0,0, \ldots, 1, \ldots, 0), & \text { if } t=\tilde{T}_{i}, \Delta_{i}=1 \\
+(1,0, \ldots, 0, \ldots, 0), & \text { if } t=\tilde{T}_{i}, \Delta_{i}=0
+\end{array}\right.
+\end{aligned}
+$$
+
+- Log-likelihood of the discrete cause-specific hazards model can be written as
+$$
+I=\sum_{i=1}^{n} \sum_{t=1}^{\tilde{T}_{i}}\left\{\sum_{j=1}^{J} y_{i t j} \cdot \log \left(\lambda_{j}\left(t \mid \mathbf{x}_{i}\right)\right)+y_{i t 0} \cdot \log \left(1-\lambda\left(t \mid \mathbf{x}_{i}\right)\right)\right\}
+$$
+
+--- 
+
+# Consequences:
+
+- Log-likelihood cannot be decomposed into separate terms for each target event
+- Log-likelihood is equivalent to the log-likelihood of $\sum_{i} \tilde{T}_{i}$ independent observations $\mathbf{y}_{i t}, i=1, \ldots, n, t=1, \ldots, \tilde{T}_{i}$, in a multinomial logistic regression model with $J+1$ outcome categories
+- $\Rightarrow$ Optimization using software for multinomial logistic regression
+- Maximum likelihood estimators are consistent and asymptotically normal under the above assumptions $(\Rightarrow$ Wald confidence intervals, likelihood ratio tests, ...)
+
+---
+
+
+
+---
+
 
 # Hello World
 
