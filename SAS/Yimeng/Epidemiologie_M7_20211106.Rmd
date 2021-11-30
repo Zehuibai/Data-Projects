@@ -3,15 +3,17 @@ title: "Geburtsdataset exploration"
 author: "Zehui Bai"
 date: 'Stand: `r format(Sys.time(), "%F %H:%M Uhr")`'
 output:
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+  md_document:
+    toc: yes
   html_document:
     df_print: paged
     number_sections: no
     toc: yes
     toc_float: yes
-  pdf_document:
-    toc: yes
-  md_document:
-    toc: yes
 fontsize: 10pt
 editor_options:
   chunk_output_type: console
@@ -45,8 +47,15 @@ inst = lapply(pkgs, library, character.only = TRUE)
 require(haven) 
 ## scan("clipboard",what="string")
 geburt1 <- read_sas("C:\\Users\\zbai\\Documents\\GitHub\\R-Projects\\SAS\\geburt1.sas7bdat")
-
 knitr::kable(sapply(geburt1,function(x)sum(is.na(x))))
+
+Rohdatensatz <- read_sas("C:\\Users\\zbai\\Documents\\GitHub\\R-Projects\\SAS\\Rohdatensatz.sas7bdat")
+library(tidyverse)
+Rohdatensatz <- na_if(Rohdatensatz, '') 
+Rohdatensatz <- na_if(Rohdatensatz, 'N/A') 
+
+knitr::kable(sapply(Rohdatensatz,function(x)sum(is.na(x))))
+str(Rohdatensatz)
 ```
 
 ## Explore the variable Probleme nach Geburt 

@@ -69,6 +69,39 @@ option pagesize = 42;
 
 
 
+
+
+
+
+
+
+ODS Listing close;
+ODS HTML  path="d:\MWSUG 2004\"
+		body="combined-ods-body.html"
+		contents="combined-ods-contents.html"
+		page="combined-ods-page.html";
+
+
+ODS HTML close;
+ODS Listing;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ods tagsets.rtf file="&Output_folder.\Table\&This_prog..rtf" style=gcpservice_style;
 
 ods escapechar="^";	

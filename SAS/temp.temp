@@ -1,0 +1,39 @@
+define statgraph Stat.Lifetest.Graphics.cifPlot;
+   notes "define cifPlot template";
+   dynamic nCurves groupVar groupNum groupName plotTest pValue plotCL Confidence Transparency maxTime xName _byline_ _bytitle_ _byfootnote;
+   BeginGraph;
+      if (NCURVES=1)
+         entrytitle "Cumulative Incidence Function";
+      else
+         entrytitle "Cumulative Incidence Functions";
+      endif;
+      if (PLOTCL)
+         entrytitle "With " CONFIDENCE " Confidence Limits" / textattrs=GRAPHVALUETEXT;
+      endif;
+      layout overlay / xaxisopts=(shortlabel=XNAME offsetmin=0.05 linearopts=(viewmax=MAXTIME)) yaxisopts=(label="Cumulative Incidence" shortlabel="CIF" linearopts=(viewmin=0 viewmax=1 tickvaluelist=(0 .2 .4 .6 .8 1.0)));
+         if (PLOTCL=1)
+            Bandplot LimitUpper=CIF_UCL LimitLower=CIF_LCL x=TIME / displayTail=false group=GROUPVAR index=GROUPNUM dataTransparency=Transparency modelname="CIF" name="CL";
+         endif;
+         stepplot y=CIF x=TIME / group=GROUPVAR index=GROUPNUM name="CIF" legendlabel="CIF";
+         if (NCURVES > 1)
+            discretelegend "CIF" / title=GROUPNAME location=outside;
+         endif;
+         if (PLOTTEST=1)
+            layout gridded / rows=1 autoalign=(TOPLEFT BOTTOMRIGHT TOP BOTTOM) border=true BackgroundColor=GraphWalls:Color Opaque=true;
+               if (PVALUE < .0001)
+                  entry "Gray's Test p " eval (PUT(PVALUE, PVALUE6.4));
+               else
+                  entry "Gray's Test p=" eval (PUT(PVALUE, PVALUE6.4));
+               endif;
+            endlayout;
+         endif;
+      endlayout;
+      if (_BYTITLE_)
+         entrytitle _BYLINE_ / textattrs=GRAPHVALUETEXT;
+      else
+         if (_BYFOOTNOTE_)
+            entryfootnote halign=left _BYLINE_;
+         endif;
+      endif;
+   EndGraph;
+end;
