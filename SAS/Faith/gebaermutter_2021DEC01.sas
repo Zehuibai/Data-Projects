@@ -2,9 +2,9 @@
 Programme name: 	Gebaermutter_D01_0_0.sas
 Programme language: SAS 9.4
 Initial date: 		01/DEC/2021
-Author(s): 		Yimeng Zheng
+Author(s): 		ZBA
 *************************************************************************************
-Short description: 	Modul 7: Fortgeschrittene epidemiologische und statistische Methoden
+Short description: 	SAS Consulting
 Requirements: 		---
 *************************************************************************************/
 
@@ -30,180 +30,252 @@ title;
 footnote;
 
 
+
+
 /************************************************************************************/ 
 /************************          Start programm            ************************/ 
 /************************************************************************************/ 
 
-*** Load the data;
+ 
+%*--------------------------------------------------;
+%*               Load the data                      ;
+%*--------------------------------------------------;
+
 data gebaermutter_analysis_D01;
 	set "C:\Users\zbai\Documents\GitHub\R-Projects\SAS\Faith\gebaermutter.sas7bdat";
-
+	/***** 
 	array Nums[*] _numeric_;
-	array Chars[*] _character_;
+	******/
 
+	array Chars[*] _character_;
+     /*************
 	do i = 1 to dim(Nums);
 		if Nums[i] = 999 then Nums[i] = .;
 	end;
+	*************/
 
 	do j = 1 to dim(Chars);
-		if Chars[j] = "" then Chars[j] = "Missing";
-		if Chars[j] = "N/A" then Chars[j] = "Missing";
+		if Chars[j] = "" then Chars[j] = "Miss";
+		if Chars[j] = "N/A" then Chars[j] = "Miss";
 	end;
-	drop i;
-
-
+	drop j;
 run;
 
+
+%*--------------------------------------------------;
+%*               Overview the data                  ;
+%*--------------------------------------------------;
 proc contents data = gebaermutter_analysis_D01 out = gebaermutter_analysis_D02;run;
 proc sort data = gebaermutter_analysis_D02; by VARNUM; run;
 
+proc sql;
+     * create macro list of the numeric variables' names;
+     select name
+     into :numerics
+          separated by ' '
+     from gebaermutter_analysis_D02
+     where type = 1;
+
+     * create macro list of the numeric variables' names with the suffix "C";
+     /* select trim(name) || 'C'*/
+	select trim(name)
+     into :characters
+          separated by ' '
+     from gebaermutter_analysis_D02
+     where type = 2;
+
+     * create macro list of the conversion from the original name to the new name with the suffix "C";
+     select cats(name, ' = ' , name, '_c')
+     into :conversions
+          separated by ' '
+     from gebaermutter_analysis_D02
+     where type = 2;
+quit;
+
+%put &numerics.;
+%put &characters.;
+%put &conversions.;
 
 
-%let Charvar = sex;
+
+proc sql noprint;
+	select distinct cats(name,'=',name,'_c') into :renames separated by ' ' from gebaermutter_analysis_D02 where type=2;
+quit;
+%put &=renames;
+
+
+/**** gebaermutter_analysis_D03 with all renamed vars ***/
+data gebaermutter_analysis_D03; set gebaermutter_analysis_D01; run;
+proc datasets library=work;
+	modify gebaermutter_analysis_D03;
+	rename &renames;
+run;
+quit;
+
+
+
+ 
+ 
+ 
+%*--------------------------------------------------;
+%*                 Format the data                  ;
+%*--------------------------------------------------;
+
+%let Charvar = age;
+
 proc freq data = gebaermutter_analysis_D01 noprint;
 	table &Charvar./missing out=Freq_&Charvar.;
 run;
+ 
 
 
+/********************************
+        Example for SEX
+********************************/
 
-
-*** Choose the relevants variables and format;
 proc format;
-	value  sex_FMT 	1 = "Männlich"
-					2 = "Weiblich";
-	value  e018_FMT 	1 = "Ja"
-					2 = "Nein";
-	value  e089m_FMT    1 = "Haupt-/Volksschulabschluss"
-					2 = "Realschulabschluss (Mittl. Reife)"
-					3 = "Abschluss Polytechn. Oberschule"
-					4 = "Fachhochschulreife"
-					5 = "Abitur (Gymnasium bzw. EOS)"
-					6 = "Anderer Schulabschluss"
-					7 = "Ohne Schulabschluss"
-					8 = "Noch keinen Schulabschluss";
-	value e093_FMT		1 = "<500 €"
-					2 = "500 - < 750 €"
-					3 = "750 - < 1.000 €"
-					4 = "1.000 - < 1.250 €"
-					5 = "1.250 - < 1.500 €"
-					6 = "1.500 - < 1.750 €"
-					7 = "1.750 - < 2.000 €"
-					8 = "2.000 - < 2.250 €"
-					9 = "2.250 - < 2.500 €"
-					10 = "2.500 - < 3.000 €"
-					11 = "3.000 - < 4.000 €"
-					12 = "4.000 - < 5.000 €"
-					13 = ">= 5.000 €";
-	value OW_FMT        1  = "Ost"
-					2  = "West";
+	value sex_FMT 1   = "Divers"
+		         2   = "Männlich"
+		         3   = "Weiblich"
+		         999 = "Miss";
 run;
 
-data geburt1_analysis_D02;
-	set geburt1_analysis_D01;
-	keep E014z e018 e018m: sex e089m e012mz e093 OW Mbmi;
-	format sex sex_FMT. e018 e018_FMT. e089m e089m_FMT. e093 e093_FMT. OW OW_FMT.;
+
+/***********************
+%let Chr_Var = wi1_t1_c;
+%let Num_Var = wi1_t1;
+***********************/
+
+%Macro JN_Fmt (Chr_Var, Num_Var);
+	if       &Chr_Var. = "Ja"   then &Num_Var. = 1;
+	else if  &Chr_Var. = "Nein" then &Num_Var. = 2;
+	else if  &Chr_Var. = "Miss" then &Num_Var. = .;
+%Mend JN_Fmt;
+
+
+/*** Gebaermutter_analysis_d04 is the final clean dataset which needed to be exported ***/
+data Gebaermutter_analysis_d04;
+	/*** Rename the char variabes to char naem ***/
+	set gebaermutter_analysis_D03;
+
+	/*** Coding the categories ***/
+
+	if      sex_c = "Weiblich"  then sex = 1;
+	else if sex_c = "Männlich"  then sex = 2;
+	else if sex_c = "Divers"    then sex = 3;
+	else if sex_c = "Miss"      then sex = .;
+
+	%JN_Fmt(wi1_t1_c, wi1_t1);
+	%JN_Fmt(wi1_t2_c, wi1_t2);
+
+	** format sex sex_FMT.;
+	drop  sex_c wi1_t1_c;
 run;
+
+
+
+
+/*******************************
+Export SAS
+
+1. export sas dataset sas7bdat:
+	* Proc export
+	* Specify libname Faith; data Faith.__;set __;
+     * Contents colomn
+2. export csv
+     * Proc export (.csv)
+     * Contents colomn
+
+Copy data
+1. Select
+2. Copy cltr+C
+3. Paste cltr+V
+********************************/
+
  
-
-
-/************************************************************************************
-1. Descriptive statistics of variables
-    	* for continious and categorical variable by Probleme nach Geburt
-	* for Geburt illness
-2. Logistic regression (Full model)
-3. Logistic regression (selected model)
-************************************************************************************/
-
-
-/*** Descriptive statistics of variables ***/
-proc sort data = geburt1_analysis_D02; by e018; run;
-proc means data=geburt1_analysis_D02 n nmiss min max mean median std q1 q3 maxdec=3 completetypes missing order=data; 
-	var E014z e012mz Mbmi;	
-	class e018;
-	ods output summary = geburt1_analysis_D03_conti;
-run; 
-proc print data = geburt1_analysis_D03_conti; run;
-
-proc freq data = geburt1_analysis_D02 ; 
-	tables (sex e089m e093 OW)*e018/Missing nopercent nocum; 
-run;
-
-*** Summary;
-proc freq data = geburt1_analysis_D02 noprint; 
-	tables Sex*e018/Missing nopercent nocum out = Geburt1_analysis_d03_cate1; 
-run;
-proc freq data = geburt1_analysis_D02 noprint; 
-	tables e089m*e018/Missing nopercent nocum out = Geburt1_analysis_d03_cate2; 
-run;
-proc freq data = geburt1_analysis_D02 noprint; 
-	tables e093*e018/Missing nopercent nocum out = Geburt1_analysis_d03_cate3; 
-run;
-proc freq data = geburt1_analysis_D02 noprint; 
-	tables OW*e018/Missing nopercent nocum out = Geburt1_analysis_d03_cate4; 
-run;
-data Geburt1_analysis_d03_cate;
-	length Parameter Variable $50.;
-	set Geburt1_analysis_d03_cate1 (in=a )
-	    Geburt1_analysis_d03_cate2 (in=b )
-	    Geburt1_analysis_d03_cate3 (in=c )
-	    Geburt1_analysis_d03_cate4 (in=d );
-	if a then Parameter = "Geschlecht";
-	if b then Parameter = "Mutter: Schulabschluss";
-	if c then Parameter = "Haushaltsnettoeinkommen";
-	if d then Parameter = "Ost/West geografisch";
-
-	if Sex ne . then Variable = vvalue(Sex);
-	if e089m ne . then Variable = vvalue(e089m);
-	if e093 ne . then Variable = vvalue(e093);
-	if OW ne . then Variable = vvalue(OW);
-
-	if Variable = "" then Variable = "Missing";
-
-	drop Sex e089m e093 OW;
-run;
-proc print data = Geburt1_analysis_d03_cate; run;
-
-
-/*** Calculate for Illness after Geburt ***/
-data geburt1_analysis_D04;
-	set geburt1_analysis_D02;
-	if e018 = 1;
-run;
-proc freq data=geburt1_analysis_D04; 
-	tables e018m:/missing;	
-run; 
-
- proc freq data=geburt1_analysis_D04; 
-	tables e018/missing;	
-run; 
-
-
-
-
-
-
-
-/*** Full Model ***/
-proc logistic data = geburt1_analysis_D02  plots(MAXPOINTS=NONE)=ODDSRATIO  ;
-	class sex e089m e093 OW/ PARAM=REF;;
-	model e018 (EVENT="Nein") = E014z sex e089m e012mz Mbmi e093 OW;
-run;
-
-
-/*** New Model ***/
-ods output OddsRatios = geburt1_analysis_D03_OddsRatios
-		 ParameterEstimates = geburt1_analysis_D03_ParEst;
-proc logistic data = geburt1_analysis_D02  plots(MAXPOINTS=NONE)=ODDSRATIO  ;
-	class sex(REF='Weiblich') e089m(REF='Noch keinen Schulabschluss') e093(REF='<500 €')/ PARAM=REF;;
-	model e018 (EVENT="Nein") = sex e089m  e093 Mbmi;
-run;
-
-
-
-
-
-
 
 
 
  
+
+
+
+
+
+%*--------------------------------------------------;
+%*              Impute the data  (example)          ;
+%*--------------------------------------------------;
+
+*** Datasets;
+proc format;
+  value female 0 = "male"
+               1= "female";
+  value prog 1 = "general"
+             2 = "academic"
+             3 = "vocation" ;
+  value race 1 = "hispanic"
+             2 = "asian"
+             3 = "african-amer"
+             4 = "white";
+  value schtyp 1 = "public"
+               2 = "private";
+  value ses  1 =  "low"
+             2 = "middle"
+             3 = "high";
+run;
+options fmtsearch=(work);
+
+data new;
+    set "C:\Users\zbai\Documents\GitHub\R-Projects\SAS\Faith\hsb_mar.sas7bdat";
+    if prog ^=. then do;
+    if prog =1 then progcat1=1;
+    else progcat1=0;
+    if prog =2 then progcat2=1;
+    else progcat2=0;
+    end;
+run;
+
+
+data hsb_flag;
+    set new;
+    if female =.  then female_flag =1; else female_flag =0;
+    if write  = . then write_flag  =1; else write_flag  =0;
+    if read   = . then read_flag   =1; else read_flag   =0;
+    if math   = . then math_flag   =1; else math_flag   =0;
+    if prog   = . then prog_flag   =1; else prog_flag   =0;
+run;
+
+
+
+/*** misspattern ***/
+proc mi data=HSB_flag nimpute=0 ;
+    var socst write read female math prog;
+    ods select misspattern;
+run;
+
+
+
+
+
+
+
+/***  MI using fully conditional specification ***/
+proc mi data= new nimpute=20 out=mi_fcs ;
+	class female prog; 
+	var socst write read female math science prog;
+	fcs logistic(female prog /link=glogit) regpmm(math read write); 
+run;
+ 
+proc genmod data=mi_fcs;
+	class female prog;
+	model read= write female math prog /dist=normal ;
+	by _imputation_;
+	ods output ParameterEstimates=gm_fcs;
+run;
+
+
+title " multiple imputation linear regression - fcs";
+proc mianalyze parms(classvar=level)=gm_fcs;
+	class female prog;
+	modeleffects intercept write female math prog;
+run;
