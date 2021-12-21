@@ -1,0 +1,181 @@
+---
+title: 'Modul 7: Fortgeschrittene epidemiologische und statistische Methoden Aufgabenblatt: Entscheidungsbäume '
+author: "Zehui Bai"
+date: 'Stand: `r format(Sys.time(), "%F %H:%M Uhr")`'
+output:
+  html_document:
+    df_print: paged
+    number_sections: no
+    toc: yes
+    toc_float: yes
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+fontsize: 10pt
+editor_options:
+  chunk_output_type: console
+colorlinks: yes
+---
+
+
+
+```{r setup, include=FALSE, echo = FALSE,message = FALSE, error = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# <!-- ---------------------------------------------------------------------- -->
+# <!--                    1. load the required packages                       -->
+# <!-- ---------------------------------------------------------------------- --> 
+packages<-c("pwr","tidyverse", "knitr", "papeR")
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+ipak(packages)
+# <!-- ---------------------------------------------------------------------- --> 
+
+
+# <!-- ---------------------------------------------------------------------- -->
+# <!--                        2. Basic system settings                        -->
+# <!-- ---------------------------------------------------------------------- -->
+### get the path
+# rstudioapi::getSourceEditorContext()$path
+# dirname(rstudioapi::getSourceEditorContext()$path)
+
+### set working directory
+# getwd()
+# setwd("c:/Users/zbai/Desktop")
+
+### get the R Version
+# paste(R.Version()[c("major", "minor")], collapse = ".")
+
+### convert backslash to forward slash 
+# scan("clipboard",what="string")
+# gsub('"', "", gsub("\\\\", "/", readClipboard()))
+# <!-- ---------------------------------------------------------------------- --> 
+
+
+
+# <!-- ---------------------------------------------------------------------- -->
+# <!--     3. Load the SASmarkdown package if the SAS output is required      -->
+# <!-- ---------------------------------------------------------------------- -->
+# library(SASmarkdown)
+# ### Set SAS output
+# ### Reset engine to R
+# saspath <- "C:/SASHome/SASFoundation/9.4/sas.exe"
+# sasopts <- "-nosplash -linesize 75"
+# knitr::opts_chunk$set(engine="sashtml", engine.path=saspath,
+#         engine.opts=sasopts, comment=NA)
+# 
+# # run these commands to convince yourself that
+# # within this knitr session the engine changed.
+# knitr::opts_chunk$get()$engine
+# knitr::opts_chunk$get()$engine.path
+# knitr::opts_chunk$get()$engine.opts
+# <!-- ---------------------------------------------------------------------- -->
+
+
+
+# <!-- ---------------------------------------------------------------------- -->
+# <!--                         4. Import the datasets                         -->
+# <!-- ---------------------------------------------------------------------- -->
+### Import csv data
+# pfad <- "~/Desktop/SASUniversityEdition/myfolders/Daten"
+# mydata1 <- read.csv(file.path(pfad, "yourcsv_data.csv"), 
+#                     sep=";", 
+#                     header=TRUE)   
+
+### Import xlsx data
+# library(readxl)
+# mydata2 <- read_excel("C:/Users/zbai/Documents/GitHub/R-Projects/SAS/Yimeng/results-text.xlsx")
+
+### Import sas data
+# library(sas7bdat)
+# mydata3 <- read.sas7bdat("~/Desktop/SASUniversityEdition/myfolders/Daten/uis.sas7bdat")
+# <!-- ---------------------------------------------------------------------- -->
+```
+ 
+
+
+
+
+
+
+
+
+
+## Aufgabe 1 
+
+**In den beiden Tabellen seien die absoluten Häufigkeiten für ein Klassifizierungsproblem mit N=2000 Beobachtungen und den Klassen A,B und C gegeben, stratifiziert nach zwei potentiellen Entscheidungsregeln. Welcher Split ist besser? Berechnen Sie dazu den Gini-Koeffizienten für beide Regeln. (5 Punkte)**
+
+
+
+|               |     A      |     B      |     C      |     Summe    |
+|---------------|------------|------------|------------|--------------|
+| $X_1 \le c_1$ |     135    |     267    |     498    |      900     |
+| $X_1 \gt c_1$ |     707    |     304    |     89     |     1100     |
+| Summe         |     842    |     571    |     587    |     2000     |
+
+
+|               |     A      |     B      |     C      |     Summe    |
+|---------------|------------|------------|------------|--------------|
+| $X_2 \le c_2$ |     70     |     71     |     19     |      160     |
+| $X_2 \gt c_2$ |     772    |     500    |     568    |     1840     |
+| Summe         |     842    |     571    |     587    |     2000     |
+
+
+
+1.  Overall, Gini Koeffizienten bzgl. der Zielgröße „Klassen A,B und C“ für 2 Tabelle sind gleich, den haben sie gleich Summe Zahl (842,571,587) Gini-Koeffizienten sind 1-((842/2000)^2 + (571/2000)^2 + (587/2000)^2) = 0.6551065
+
+2. Aber, gibt es zusätzlich Spilt, wir betrachten Klass ABC as Spilt rechnen dann Gini Differenz
+
+**Table 1:**
+
+G(K1) = 1- (900/2000)^2 - (1100/2000)^2 = 0.495
+
+G(Spilt) = (900/2000) * (1 -(135/900)^2 -(267/900)^2 - (498/900)^2 ) + 
+(1100/2000) * (1 -(707/1100)^2 - (304/1100)^2 - (89/1100)^2 ) = 0.7029027
+
+
+**Table 2:**
+
+G(K1) = 1- (160/2000)^2 - (1840/2000)^2 = 0.1472
+
+G(Spilt) = (160/2000) * (1 -(70/160)^2 - (71/160)^2 - (19/160)^2 ) + 
+(1840/2000) * (1 -(772/1840)^2 - (500/1840)^2 - (568/1840)^2 ) = 0.8176255
+
+
+Table 1 has smaller G(Spilt) (0.7029027<0.8176255) and better
+
+
+## Aufgabe 2
+
+**Erkären Sie jeweils kurz was die folgenden Konzepte bedeuten (3 -5 Sätze)**
+
+**a.	Was ist Overfitting und wie können wir es vermeiden? (3 Punkte)**
+
+Overfitting: too many selected features in the tree. The mean square error is very low in the training data set, but the predictability of the model is very poor, that is, the mean square error in the test data set is very high
+
+Avoid over-fitting in random forest, the main thing needs to do is **optimize a tuning parameter** that governs the number of features that are randomly chosen to grow each tree from the bootstrapped data. 
+
+e.g. via k-fold cross-validation to choose the tuning parameter that minimizes test sample prediction error.
+
+In addition, growing a larger forest will improve predictive accuracy, but be aware that planting too many trees will cause the model to slow down and the return will be very low.
+
+
+**b.	Was ist ein Surrogate Split? (3 Punkte)**
+See Folie 51/59 
+
+
+
+
+
+
+
+
+
+
+
+ 
