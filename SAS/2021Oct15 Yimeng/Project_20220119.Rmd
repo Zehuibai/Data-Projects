@@ -1,0 +1,649 @@
+---
+title: 'SARS-CoV-2 vaccine acceptance in Germany: Do trust in health care professionals make a difference?)'
+author: "Zehui Bai"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    df_print: paged
+    number_sections: no
+    toc: yes
+    toc_float: yes
+  md_document:
+    toc: yes
+  word_document:
+    toc: yes
+fontsize: 10pt
+editor_options:
+  chunk_output_type: console
+colorlinks: yes
+---
+
+```{r setup, include=FALSE, echo = FALSE,message = FALSE, error = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# load package
+pkgs = c("ggplot2", "ggcorrplot", "tidyverse")
+inst = lapply(pkgs, library, character.only = TRUE) 
+
+ 
+```
+
+
+
+ 
+
+# Data Exploration
+
+## Fragesetllung
+
+This project aims to explory the important factors to influence the 
+
+Question 4/3: Wurden Sie gegen Corona geimpft? (ImpfZust)
+
+## Selection of variables
+
+Following variable are selected from the questionares:
+
+* Perception of disease risk: 4/1; 4/2 (code)   
+    + Question 4/1: Kennen Sie Personen, die an Corona erkrankt sind? (PersoKenn)
+    + Question 4/2: Hatte mindestens eine dieser Personen einen schweren Krankheitsverlauf? (KennErkr)
+* Attitude towards vaccination (ImpGrund):
+    + Question 4/16: Warum haben/ wollen Sie sich gegen Corona impfen lassen? 
+        + ImpGrund[beruf]	Ich habe/ möchte mich aus beruflichen Gründen impfen lassen
+        + ImpGrund[risiko]	Ich möchte das Risiko einer Corona-Infektion verringern
+        + ImpGrund[norm]	Ich möchte schnell zum normalen Leben zurückkehren
+        + ImpGrund[gesfam]	Ich möchte die Gesundheit meiner Familie schützen
+        + ImpGrund[sozum]	Ich werde/ wurde von meinem sozialen Umfeld angetrieben
+        + ImpGrund[gesell]	Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt
+        + ImpGrund[geswesent]	Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt
+* One’s own health status: 
+    + Question 2/2: Wie schätzen Sie Ihren allgemeinen körperlichen Gesundheitszustand im Durchschnitt über die letzten sechs Monate ein? (GesuZuK)
+    + Question 2/3: Wie schätzen Sie Ihren allgemeinen psychischen Gesundheitszustand im Durchschnitt über die letzten sechs Monate ein? (GesuZuPsy)
+    + Question 2/4: Welche der folgenden Impfungen haben Sie bereits erhalten? 
+        + Anam[HepB]	Hepatitis B
+        + Anam[Fern]	Impfungen für Fernreisen (wie z.B. Japanische Enzephalitis, Gelbfieber, Typhus, Tollwut)
+        + Anam[Inf]	Influenza (mind. 1mal)
+        + Anam[Mas]	Masern
+        + Anam[Mum]	Mumps
+        + Anam[Roet]	Röteln
+        + Anam[Pol]	Polio (Kinderlähmung) 
+        + Anam[Nicht]	Ich bin mir über meinen Impfstatus nicht sicher
+        + Anam[Keine]	Ich habe keine der hier aufgelisteten Impfungen erhalten
+* Socio-demographic data: 
+    + Question 1/1: Bitte geben Sie Ihr Alter in Jahren an (Age)
+    + Question 2/1: Welchem Geschlecht fühlen Sie sich zugehörig (Sex)
+* Socio-economic status 
+    + Question 8/1: Was ist Ihr höchster Schulabschluss (Schulab)
+    + Question 8/2: Was ist Ihr höchster beruflicher Abschluss? (BerufAb) 
+    + Question 8/3: Wie ist Ihr aktuelles Beschäftigungsverhältnis?
+    + Question 8/4: Sind/ Waren Sie beruflich im Gesundheitswesen tätig? (TaetGes)
+    + Question 8/5: In welchem Bereich sind/ waren Sie tätig? (TaetGesBer)
+* Access to health information 
+    + Question 6/5: Wie oft informieren Sie sich bewusst über Corona? (ZeitInfo)
+* Trust in government 
+    + Question 5/8: Wie zufrieden sind Sie mit der Arbeit der folgenden Einrichtungen während der Corona-Pandemie (in score transform)
+* Compliance with health professionals 
+    + Question 5/4: Wie schätzen Sie die Qualität der Behandlung dieses Arztes/dieser Ärztin im Allgemeinen ein? (zapaQualBe)
+    + Question 5/5: Werden/Wurden Sie durch einen Arzt/eine Ärztin über die Corona Impfungen aufgeklärt? (zapaImpf)
+    + Question 5/6: Haben sie aktiv nach einer Aufklärung gefragt? (AufklAkt)
+    + Question 5/7: Waren Sie zufrieden mit der Aufklärung über die Impfung (ZufriedAufk)
+* Internet and social media (convert the variable)
+    + Question 6/4: Bitte geben Sie an, wie oft Sie mit den folgenden Personengruppen über Corona sprechen. (**not find**)
+    
+* Additional analysis
+    + Question 4/5: Wie viele Corona-Impfungen haben Sie bis jetzt erhalten? (ImpDos)
+    + Question 9/5: Wie viele Personen leben in Ihrem Haushalt (Sie mit eingeschlossen)? (PersHaus)
+    + Question 6/2: Bitte geben Sie an, welche der nachfolgenden Informationsquellen Sie bei der Suche nach allgemeinen Informationen nutzen und wie häufig.
+    + Question 6/4: Bitte geben Sie an, wie oft Sie mit den folgenden Personengruppen über Corona sprechen. (Face2Face[Fam],Face2Face[Fachpers]) 
+    + Question 9/6: Wie hoch ist Ihr monatliches Nettoeinkommen? (Eink)
+ 
+    
+## Variable convertion
+
+For the Question "Question 4/16: Warum haben/ wollen Sie sich gegen Corona impfen lassen?", the 7 sub questions will be regarded as seperate variables to explore the effects of different reason for vaccination.
+  + ImpGrund[beruf]	Ich habe/ möchte mich aus beruflichen Gründen impfen lassen
+  + ImpGrund[risiko]	Ich möchte das Risiko einer Corona-Infektion verringern
+  + ImpGrund[norm]	Ich möchte schnell zum normalen Leben zurückkehren
+  + ImpGrund[gesfam]	Ich möchte die Gesundheit meiner Familie schützen
+  + ImpGrund[sozum]	Ich werde/ wurde von meinem sozialen Umfeld angetrieben
+  + ImpGrund[gesell]	Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt
+  + ImpGrund[geswesent]	Ich bin der Meinung, dass die Impfung einen wichtigen gesellschaftlichen Beitrag darstellt
+        
+For the Question "Question 2/4: Welche der folgenden Impfungen haben Sie bereits erhalten?", this Question will be converted to "Haben Sie andere Impfstoffe erhalten?" (ImpfHistory) If the participant has received any following vaccines (Check the following vaccine options), the answer of above question shoulb be "Ja".
+    * Hepatitis B
+    * Impfungen für Fernreisen (wie z.B. Japanische Enzephalitis, Gelbfieber, Typhus, Tollwut)
+    * Influenza (mind. 1mal)
+    * Masern
+    * Mumps
+    * Röteln
+    * Polio (Kinderlähmung) 
+Otherwise, the check of following two options will conclude "Nein" as answer.
+    * Ich bin mir über meinen Impfstatus nicht sicher
+    * Ich habe keine der hier aufgelisteten Impfungen erhalten
+
+For the Question "Question 5/8: Wie zufrieden sind Sie mit der Arbeit der folgenden Einrichtungen während der Corona-Pandemie", the answer of following government agencies will not be analyzed as categorical variables, `GesuwiEin[Bund]`,`GesuwiEin[BuGe]`,`GesuwiEin[PolBund]`,`GesuwiEin[Gesu]`,`GesuwiEin[Pei]`,`GesuwiEin[Rki]`,`GesuwiEin[Stiko]`, but will be converted into scores. The correspondence between categories and scores is as follows 
+
+* sehr zufrieden -- 50	
+* eher zufrieden -- 25
+* eher unzufrieden -- -25	
+* sehr unzufrieden -- -50
+* kann dazu nichts sagen -- 0
+
+For each particicant, the mean score of the 7 government agencies will be calculated as the score of satisfaction with the government agency, which indicates the degree of trust in the government. (Govtrust)
+
+ 
+
+For the Question "In welchem Bereich sind/ waren Sie tätig? (TaetGesBer)", This variable is transformed into a dichotomous variable, that is, does the participant's work in medical-related field, Ob der Teilnehmer in einem medizinnahen Bereich tätig ist (MediWork). Checking the following options is regarded as "Ja", that is, engaged in medical-related fields, 
+
+* Medizinisches Personal
+* Pharmazie
+* Gesundheitsamt
+* Krankenversicherung
+
+otherwise the answer is "Nein".
+
+
+## Count the missing data 
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+library(readxl)
+Project_full <- read_excel("C:/Users/zbai/Documents/GitHub/R-Projects/SAS/2021Oct15 Yimeng/results-text.xlsx")
+ 
+ 
+  
+## select variables
+Project1 <- subset(Project_full,
+                   select = c(ImpfZust,
+                              PersoKenn,KennErkr,
+                              `ImpGrund[beruf]`,`ImpGrund[risiko]`,`ImpGrund[norm]`,
+                              `ImpGrund[gesfam]`,`ImpGrund[sozum]`,`ImpGrund[gesell]`,
+                              `ImpGrund[geswesent]`,
+                              GesuZuK,GesuZuPsy,`Anam[HepB]`,`Anam[Fern]`,
+                              `Anam[Inf]`,`Anam[Mas]`,`Anam[Mum]`,`Anam[Roet]`,
+                              `Anam[Pol]`,`Anam[Nicht]`,`Anam[Keine]`,
+                              Sex, age,
+                              Schulab, BerufAb, TaetGes, 
+                              `TaetGesBer[1]`,`TaetGesBer[2]`,`TaetGesBer[3]`,
+                              `TaetGesBer[4]`,`TaetGesBer[5]`,`TaetGesBer[other]`,
+                              ZeitInfo,
+                              `GesuwiEin[Bund]`,`GesuwiEin[BuGe]`,`GesuwiEin[PolBund]`,
+                              `GesuwiEin[Gesu]`,`GesuwiEin[Pei]`,
+                              `GesuwiEin[Rki]`,`GesuwiEin[Stiko]`,
+                              zapaQualBe,	zapaImpf, AufklAkt, ZufriedAufk,
+                              ImpDos,
+                              `ErwerbStat[1]`,`ErwerbStat[2]`,`ErwerbStat[3]`,
+                              `ErwerbStat[4]`,`ErwerbStat[5]`,`ErwerbStat[6]`,
+                              `ErwerbStat[7]`,`ErwerbStat[8]`,`ErwerbStat[9]`,
+                              `ErwerbStat[10]`,`ErwerbStat[11]`,`ErwerbStat[other]`,
+                              PersHaus,
+                              `InfoInt[Su]`,`InfoInt[Stell]`,`InfoInt[Vid]`,
+                              `InfoInt[Pod]`,`InfoInt[TVrecht]`,`InfoInt[TVp]`,`InfoInt[Alt]`,
+                              `InfoInt[Inst]`,`InfoInt[FB]`,`InfoInt[Twitt]`,`InfoInt[Snap]`,
+                              `InfoInt[LinkX]`,`InfoInt[What]`,`InfoInt[Tel]`,`InfoInt[Ander]`,
+                              `Face2Face[Fam]`,`Face2Face[Fachpers]`,
+                              Eink))
+ 
+Project1$ImpfHistory <- ifelse(Project1$`Anam[HepB]`=="Ja"|Project1$`Anam[Fern]`=="Ja"|
+                                 Project1$`Anam[Inf]`=="Ja"|Project1$`Anam[Mas]`=="Ja"|
+                                 Project1$`Anam[Mum]`=="Ja"|Project1$`Anam[Roet]`=="Ja"|
+                                 Project1$`Anam[Pol]`=="Ja","Ja",ifelse(Project1$`Anam[Nicht]`=="Ja"|Project1$`Anam[Keine]`=="Ja","Nein",NA))
+
+Project1$MediWork <- ifelse(Project1$`TaetGesBer[1]`=="Ja"|Project1$`TaetGesBer[3]`=="Ja"|
+                              Project1$`TaetGesBer[4]`=="Ja"|Project1$`TaetGesBer[5]`=="Ja", "Ja",
+                            ifelse(Project1$`TaetGesBer[2]`=="Ja"|Project1$`TaetGesBer[other]`=="Ja","Nein",NA))
+
+
+Project1$PersHausAlone <-  ifelse(Project1$PersHaus==1,"Alleine leben",
+                                  ifelse(Project1$PersHaus>1,"Nicht alleine leben",NA))
+ 
+FacFuna <- function(var){
+  factor(var, levels = c("Ja", "Nein"), labels = c("Ja", "Nein"), exclude = NULL)
+}
+FacFunb <- function(var){
+  factor(var, 
+         levels = c("trifft nicht zu", "trifft eher nicht zu", 
+                    "trifft eher zu", "trifft zu"), 
+         labels = c("trifft nicht zu", "trifft eher nicht zu", 
+                    "trifft eher zu", "trifft zu"))
+}
+FacFunc <- function(var){
+  factor(var, 
+         levels = c("Schlecht", "Weniger gut", "Gut", "Sehr gut"),
+         labels = c("Schlecht", "Weniger gut", "Gut", "Sehr gut"))
+}
+FacFund <- function(var){
+  factor(var, 
+         levels = c("immer", "oft","nie", "selten"),
+         labels = c("immer", "oft","nie", "selten"))
+}
+
+
+
+
+ScoreFun <- function(var){
+  ifelse(var == "sehr unzufrieden", -50, ifelse(
+    var == "eher unzufrieden", -25, ifelse(
+      var == "kann dazu nichts sagen", 0, ifelse(
+        var == "eher zufrieden", 25, ifelse(
+          var == "sehr zufrieden", 50, NA
+        )
+      )
+    )
+  ))
+}
+
+
+## Score
+Project1$Score_Bund <- ScoreFun(Project1$`GesuwiEin[Bund]`)
+Project1$Score_BuGe <- ScoreFun(Project1$`GesuwiEin[BuGe]`)
+Project1$Score_PolBund <- ScoreFun(Project1$`GesuwiEin[PolBund]`)
+Project1$Score_Pei <- ScoreFun(Project1$`GesuwiEin[Pei]`)
+Project1$Score_Gesu <- ScoreFun(Project1$`GesuwiEin[Gesu]`)
+Project1$Score_Rki <- ScoreFun(Project1$`GesuwiEin[Rki]`) 
+Project1$Score_Stiko <- ScoreFun(Project1$`GesuwiEin[Stiko]`)
+
+## Replace the missing values with 0
+Project1$Score_Bund[is.na(Project1$Score_Bund)] <- 0
+Project1$Score_BuGe[is.na(Project1$Score_BuGe)] <- 0
+Project1$Score_PolBund[is.na(Project1$Score_PolBund)] <- 0
+Project1$Score_Pei[is.na(Project1$Score_Pei)] <- 0
+Project1$Score_Gesu[is.na(Project1$Score_Gesu)] <- 0
+Project1$Score_Rki[is.na(Project1$Score_Rki)] <- 0
+Project1$Score_Stiko[is.na(Project1$Score_Stiko)] <- 0
+
+Project1$Govtrust <- (Project1$Score_Bund + Project1$Score_BuGe + Project1$Score_PolBund + 
+                        Project1$Score_Pei + Project1$Score_Rki + Project1$Score_Stiko + Project1$Score_Gesu)/7
+
+### Format the variables 
+Project1$Sex <- as.factor(Project1$Sex)
+Project1$Schulab <- as.factor(Project1$Schulab)
+Project1$BerufAb <- as.factor(Project1$BerufAb)
+Project1$TaetGes <- as.factor(Project1$TaetGes)
+Project1$ZeitInfo <- as.factor(Project1$ZeitInfo)
+Project1$zapaQualBe <- as.factor(Project1$zapaQualBe)
+Project1$ZufriedAufk <- as.factor(Project1$ZufriedAufk)
+Project1$ImpDos <- as.factor(Project1$ImpDos)
+Project1$PersHausAlone <- as.factor(Project1$PersHausAlone)
+
+Project1$`Face2Face[Fam]` <- as.factor(Project1$`Face2Face[Fam]`)
+Project1$`Face2Face[Fachpers]` <- as.factor(Project1$`Face2Face[Fachpers]`)
+Project1$Eink <- as.factor(Project1$Eink)
+
+Project1 <- Project1 %>%
+  mutate(across(c(ImpfZust,PersoKenn,KennErkr,ImpfHistory,
+                  MediWork, zapaImpf, AufklAkt,
+                   `ErwerbStat[1]`,`ErwerbStat[2]`,`ErwerbStat[3]`,
+                  `ErwerbStat[4]`,`ErwerbStat[5]`,`ErwerbStat[6]`,
+                  `ErwerbStat[7]`,`ErwerbStat[8]`,`ErwerbStat[9]`,
+                  `ErwerbStat[10]`,`ErwerbStat[11]`,`ErwerbStat[other]`),FacFuna))
+# Project1$ImpfZust <- factor(Project1$ImpfZust, 
+#                             levels = levels(addNA(Project1$ImpfZust)), 
+#                             labels = c(levels(Project1$ImpfZust), "Missing"), 
+#                             exclude = NULL)
+  
+Project1 <- Project1 %>%
+  mutate(across(c(`ImpGrund[beruf]`,`ImpGrund[risiko]`,`ImpGrund[norm]`,
+                  `ImpGrund[gesfam]`,`ImpGrund[sozum]`,`ImpGrund[gesell]`,
+                  `ImpGrund[geswesent]`),FacFunb))
+
+Project1 <- Project1 %>%
+  mutate(across(c(GesuZuK, GesuZuPsy),FacFunc))
+
+Project1 <- Project1 %>%
+  mutate(across(c( `InfoInt[Su]`,`InfoInt[Stell]`,`InfoInt[Vid]`,
+                   `InfoInt[Pod]`,`InfoInt[TVrecht]`,`InfoInt[TVp]`,`InfoInt[Alt]`,
+                   `InfoInt[Inst]`,`InfoInt[FB]`,`InfoInt[Twitt]`,`InfoInt[Snap]`,
+                   `InfoInt[LinkX]`,`InfoInt[What]`,`InfoInt[Tel]`,`InfoInt[Ander]`),FacFund))
+
+Project2 <- subset(Project1, select = -c(`Anam[HepB]`,`Anam[Fern]`,`Anam[Inf]`,`Anam[Mas]`,
+                                         `Anam[Mum]`,`Anam[Roet]`,`Anam[Pol]`,`Anam[Nicht]`,`Anam[Keine]`,
+                                         `TaetGesBer[1]`,`TaetGesBer[2]`,`TaetGesBer[3]`,
+                                         `TaetGesBer[4]`,`TaetGesBer[5]`,`TaetGesBer[other]`,
+                                         `GesuwiEin[Bund]`,`GesuwiEin[BuGe]`,`GesuwiEin[PolBund]`,
+                                         `GesuwiEin[Gesu]`,`GesuwiEin[Pei]`,`GesuwiEin[Rki]`,
+                                         `GesuwiEin[Stiko]`,
+                                         Score_Bund, Score_BuGe, Score_PolBund, 
+                                         Score_Pei, Score_Gesu, Score_Rki, Score_Stiko))
+
+library(kableExtra)
+# kable(sapply(Project2,function(x)sum(is.na(x))), 
+#       caption = "Missing data among variables", format = "html") %>% 
+#   kable_styling(latex_options = "striped")
+```
+
+## Descriptive Statistics
+
+
+The default summary statistics for continuous variables will be the number of non-missing observations (n), the number of missing observation (miss) as well as arithmetic mean, standard deviation (SD), lower quartile (Q1), upper quartile (Q3), minimum (min), median, and maximum (max), the analysis will be conducted grouped by variale "ImpfZust", the 5 missing values of ImpfZust will be ignored. Moreover, the p value based on the t-test given 0.05 significant level will be provided.
+
+For categorical variables, the absolute frequencies (n) and relative frequencies (percentage in %) of patients by category will be the default summary presentation, and, if applicable, the number of missing values is provided in a “missing” category. The analysis will be conducted grouped by variale "ImpfZust", the 5 missing values of ImpfZust will be ignored. Furthermore, the p value based on the fisher-test given 0.05 significant level will be provided.
+
+|   |          | ImpfZust | N   | Missing | Mean   | SD    | Min | Q1     | Median | Q3    | Max   | p.value |
+|---|----------|----------|-----|---------|--------|-------|-----|--------|--------|-------|-------|---------|
+|   | age      | Ja       | 710 | 0       | 28.71  | 10.83 | 18  | 22.00  | 25.00  | 30.00 | 73.00 | <0.05   |
+|   |          | Nein     | 113 | 0       | 34.35  | 14.32 | 18  | 24.00  | 29.00  | 41.00 | 99.00 |         |
+|   | PersHaus | Ja       | 699 | 11      | 2.47   | 1.58  | 0   | 2.00   | 2.00   | 3.00  | 30.00 | 0.398   |
+|   |          | Nein     | 108 | 5       | 2.64   | 1.98  | 0   | 2.00   | 2.00   | 3.00  | 15.00 |         |
+|   | Govtrust | Ja       | 710 | 0       | 7.91   | 16.74 | -50 | -3.57  | 7.14   | 21.43 | 50.00 | <0.05   |
+|   |          | Nein     | 113 | 0       | -22.03 | 22.60 | -50 | -39.29 | -25.00 | -3.57 | 35.71 |         |
+
+
+
+
+
+
+| Variable               | Category                                                                         | N (geimpft) | % (geimpft) | N (nicht geimpft) | % (nicht geimpft) | p.value |
+|------------------------|----------------------------------------------------------------------------------|-------------|-------------|-------------------|-------------------|---------|
+| PersoKenn              | Ja                                                                               | 580         | 81.7        | 81                | 71.7              | <0.05   |
+|                        | Nein                                                                             | 126         | 17.7        | 32                | 28.3              |         |
+| KennErkr               | Ja                                                                               | 211         | 29.7        | 20                | 17.7              | <0.05   |
+|                        | Nein                                                                             | 367         | 51.7        | 61                | 54.0              |         |
+| ImpGrund[beruf]        | trifft nicht zu                                                                  | 232         | 32.7        | 10                | 8.8               | 0.263   |
+|                        | trifft eher nicht zu                                                             | 130         | 18.3        | 5                 | 4.4               |         |
+|                        | trifft eher zu                                                                   | 122         | 17.2        | 4                 | 3.5               |         |
+|                        | trifft zu                                                                        | 226         | 31.8        | 3                 | 2.7               |         |
+| ImpGrund[risiko]       | trifft nicht zu                                                                  | 15          | 2.1         | 1                 | 0.9               | <0.05   |
+|                        | trifft eher nicht zu                                                             | 20          | 2.8         | 4                 | 3.5               |         |
+|                        | trifft eher zu                                                                   | 87          | 12.3        | 5                 | 4.4               |         |
+|                        | trifft zu                                                                        | 588         | 82.8        | 12                | 10.6              |         |
+| ImpGrund[norm]         | trifft nicht zu                                                                  | 13          | 1.8         | 5                 | 4.4               | <0.05   |
+|                        | trifft eher nicht zu                                                             | 39          | 5.5         | 4                 | 3.5               |         |
+|                        | trifft eher zu                                                                   | 129         | 18.2        | 1                 | 0.9               |         |
+|                        | trifft zu                                                                        | 529         | 74.5        | 12                | 10.6              |         |
+| ImpGrund[gesfam]       | trifft nicht zu                                                                  | 13          | 1.8         | 2                 | 1.8               | <0.05   |
+|                        | trifft eher nicht zu                                                             | 24          | 3.4         | 3                 | 2.7               |         |
+|                        | trifft eher zu                                                                   | 76          | 10.7        | 4                 | 3.5               |         |
+|                        | trifft zu                                                                        | 597         | 84.1        | 13                | 11.5              |         |
+| ImpGrund[sozum]        | trifft nicht zu                                                                  | 258         | 36.3        | 6                 | 5.3               | 0.683   |
+|                        | trifft eher nicht zu                                                             | 227         | 32.0        | 7                 | 6.2               |         |
+|                        | trifft eher zu                                                                   | 160         | 22.5        | 6                 | 5.3               |         |
+|                        | trifft zu                                                                        | 65          | 9.2         | 3                 | 2.7               |         |
+| ImpGrund[gesell]       | trifft nicht zu                                                                  | 21          | 3.0         | 4                 | 3.5               | <0.05   |
+|                        | trifft eher nicht zu                                                             | 28          | 3.9         | 4                 | 3.5               |         |
+|                        | trifft eher zu                                                                   | 118         | 16.6        | 6                 | 5.3               |         |
+|                        | trifft zu                                                                        | 543         | 76.5        | 8                 | 7.1               |         |
+| ImpGrund[geswesent]    | trifft nicht zu                                                                  | 29          | 4.1         | 3                 | 2.7               | <0.05   |
+|                        | trifft eher nicht zu                                                             | 52          | 7.3         | 2                 | 1.8               |         |
+|                        | trifft eher zu                                                                   | 150         | 21.1        | 7                 | 6.2               |         |
+|                        | trifft zu                                                                        | 479         | 67.5        | 10                | 8.8               |         |
+| GesuZuK                | Schlecht                                                                         | 5           | 0.7         | 1                 | 0.9               | 0.131   |
+|                        | Weniger gut                                                                      | 42          | 5.9         | 7                 | 6.2               |         |
+|                        | Gut                                                                              | 410         | 57.7        | 53                | 46.9              |         |
+|                        | Sehr gut                                                                         | 252         | 35.5        | 52                | 46.0              |         |
+| GesuZuPsy              | Schlecht                                                                         | 37          | 5.2         | 6                 | 5.3               | 0.182   |
+|                        | Weniger gut                                                                      | 202         | 28.5        | 27                | 23.9              |         |
+|                        | Gut                                                                              | 356         | 50.1        | 52                | 46.0              |         |
+|                        | Sehr gut                                                                         | 111         | 15.6        | 27                | 23.9              |         |
+| Sex                    | Divers                                                                           | 6           | 0.8         | 3                 | 2.7               | 0.189   |
+|                        | Männlich                                                                         | 189         | 26.6        | 31                | 27.4              |         |
+|                        | Weiblich                                                                         | 514         | 72.4        | 78                | 69.0              |         |
+| Schulab                | Abitur/ Fachabitur                                                               | 657         | 92.5        | 92                | 81.4              | <0.05   |
+|                        | Hauptschulabschluss                                                              | 9           | 1.3         | 2                 | 1.8               |         |
+|                        | Realschulabschluss                                                               | 37          | 5.2         | 16                | 14.2              |         |
+|                        | Sonstiges                                                                        | 4           | 0.6         | 2                 | 1.8               |         |
+| TaetGes                | Ja                                                                               | 207         | 29.2        | 28                | 24.8              | 0.371   |
+|                        | Nein                                                                             | 503         | 70.8        | 85                | 75.2              |         |
+| ZeitInfo               | mehrmals die Woche                                                               | 241         | 33.9        | 31                | 27.4              | 0.325   |
+|                        | monatlich                                                                        | 97          | 13.7        | 19                | 16.8              |         |
+|                        | nie                                                                              | 19          | 2.7         | 4                 | 3.5               |         |
+|                        | täglich                                                                          | 122         | 17.2        | 26                | 23.0              |         |
+|                        | wöchentlich                                                                      | 217         | 30.6        | 31                | 27.4              |         |
+| zapaQualBe             | Eher gering                                                                      | 58          | 8.2         | 29                | 25.7              | <0.05   |
+|                        | Eher hoch                                                                        | 373         | 52.5        | 52                | 46.0              |         |
+|                        | Sehr gering                                                                      | 2           | 0.3         | 6                 | 5.3               |         |
+|                        | Sehr hoch                                                                        | 268         | 37.7        | 23                | 20.4              |         |
+| zapaImpf               | Ja                                                                               | 502         | 70.7        | 30                | 26.5              | <0.05   |
+|                        | Nein                                                                             | 204         | 28.7        | 79                | 69.9              |         |
+| AufklAkt               | Ja                                                                               | 92          | 13.0        | 19                | 16.8              | <0.05   |
+|                        | Nein                                                                             | 406         | 57.2        | 11                | 9.7               |         |
+| ZufriedAufk            | Eher unzufrieden                                                                 | 24          | 3.4         | 10                | 8.8               | <0.05   |
+|                        | Eher zufrieden                                                                   | 197         | 27.7        | 9                 | 8.0               |         |
+|                        | Sehr unzufrieden                                                                 | 3           | 0.4         | 5                 | 4.4               |         |
+|                        | Sehr zufrieden                                                                   | 277         | 39.0        | 5                 | 4.4               |         |
+| ImpDos                 | Ich wurde mit Johnson&Johnson geimpft und habe deshalb nur eine Impfung erhalten | 38          | 5.4         | 0                 | 0.0               | 1.000   |
+|                        | Ich habe beide Impfungen bekommen                                                | 596         | 83.9        | 0                 | 0.0               |         |
+|                        | Ich habe nur die erste Impfung bekommen                                          | 64          | 9.0         | 0                 | 0.0               |         |
+|                        | Ich habe nur eine Impfung bekommen (da ich schon genesen bin)                    | 12          | 1.7         | 0                 | 0.0               |         |
+| ErwerbStat[1]          | Ja                                                                               | 54          | 7.6         | 8                 | 7.1               | 1.000   |
+|                        | Nein                                                                             | 656         | 92.4        | 105               | 92.9              |         |
+| ErwerbStat[2]          | Ja                                                                               | 14          | 2.0         | 5                 | 4.4               | 0.165   |
+|                        | Nein                                                                             | 696         | 98.0        | 108               | 95.6              |         |
+| ErwerbStat[3]          | Ja                                                                               | 5           | 0.7         | 1                 | 0.9               | 0.589   |
+|                        | Nein                                                                             | 705         | 99.3        | 112               | 99.1              |         |
+| ErwerbStat[4]          | Ja                                                                               | 9           | 1.3         | 0                 | 0.0               | 0.619   |
+|                        | Nein                                                                             | 701         | 98.7        | 113               | 100.0             |         |
+| ErwerbStat[5]          | Ja                                                                               | 97          | 13.7        | 10                | 8.8               | 0.177   |
+|                        | Nein                                                                             | 613         | 86.3        | 103               | 91.2              |         |
+| ErwerbStat[6]          | Ja                                                                               | 12          | 1.7         | 3                 | 2.7               | 0.447   |
+|                        | Nein                                                                             | 698         | 98.3        | 110               | 97.3              |         |
+| ErwerbStat[7]          | Ja                                                                               | 110         | 15.5        | 12                | 10.6              | 0.201   |
+|                        | Nein                                                                             | 600         | 84.5        | 101               | 89.4              |         |
+| ErwerbStat[8]          | Ja                                                                               | 254         | 35.8        | 19                | 16.8              | <0.05   |
+|                        | Nein                                                                             | 456         | 64.2        | 94                | 83.2              |         |
+| ErwerbStat[9]          | Ja                                                                               | 89          | 12.5        | 16                | 14.2              | 0.649   |
+|                        | Nein                                                                             | 621         | 87.5        | 97                | 85.8              |         |
+| ErwerbStat[10]         | Ja                                                                               | 147         | 20.7        | 26                | 23.0              | 0.619   |
+|                        | Nein                                                                             | 563         | 79.3        | 87                | 77.0              |         |
+| ErwerbStat[11]         | Ja                                                                               | 31          | 4.4         | 15                | 13.3              | <0.05   |
+|                        | Nein                                                                             | 679         | 95.6        | 98                | 86.7              |         |
+| InfoInt[Su]            | immer                                                                            | 431         | 60.7        | 56                | 49.6              | <0.05   |
+|                        | oft                                                                              | 252         | 35.5        | 48                | 42.5              |         |
+|                        | nie                                                                              | 0           | 0.0         | 2                 | 1.8               |         |
+|                        | selten                                                                           | 23          | 3.2         | 5                 | 4.4               |         |
+| InfoInt[Stell]         | immer                                                                            | 166         | 23.4        | 18                | 15.9              | <0.05   |
+|                        | oft                                                                              | 369         | 52.0        | 60                | 53.1              |         |
+|                        | nie                                                                              | 11          | 1.5         | 8                 | 7.1               |         |
+|                        | selten                                                                           | 159         | 22.4        | 25                | 22.1              |         |
+| InfoInt[Vid]           | immer                                                                            | 79          | 11.1        | 17                | 15.0              | 0.591   |
+|                        | oft                                                                              | 206         | 29.0        | 33                | 29.2              |         |
+|                        | nie                                                                              | 137         | 19.3        | 19                | 16.8              |         |
+|                        | selten                                                                           | 282         | 39.7        | 41                | 36.3              |         |
+| InfoInt[Pod]           | immer                                                                            | 59          | 8.3         | 5                 | 4.4               | 0.423   |
+|                        | oft                                                                              | 181         | 25.5        | 25                | 22.1              |         |
+|                        | nie                                                                              | 243         | 34.2        | 42                | 37.2              |         |
+|                        | selten                                                                           | 222         | 31.3        | 39                | 34.5              |         |
+| InfoInt[TVrecht]       | immer                                                                            | 166         | 23.4        | 15                | 13.3              | <0.05   |
+|                        | oft                                                                              | 294         | 41.4        | 33                | 29.2              |         |
+|                        | nie                                                                              | 69          | 9.7         | 31                | 27.4              |         |
+|                        | selten                                                                           | 176         | 24.8        | 32                | 28.3              |         |
+| InfoInt[TVp]           | immer                                                                            | 15          | 2.1         | 4                 | 3.5               | 0.120   |
+|                        | oft                                                                              | 93          | 13.1        | 15                | 13.3              |         |
+|                        | nie                                                                              | 305         | 43.0        | 58                | 51.3              |         |
+|                        | selten                                                                           | 290         | 40.8        | 34                | 30.1              |         |
+| InfoInt[Alt]           | immer                                                                            | 1           | 0.1         | 2                 | 1.8               | <0.05   |
+|                        | oft                                                                              | 2           | 0.3         | 13                | 11.5              |         |
+|                        | nie                                                                              | 665         | 93.7        | 79                | 69.9              |         |
+|                        | selten                                                                           | 36          | 5.1         | 17                | 15.0              |         |
+| InfoInt[Inst]          | immer                                                                            | 76          | 10.7        | 7                 | 6.2               | 0.140   |
+|                        | oft                                                                              | 158         | 22.3        | 19                | 16.8              |         |
+|                        | nie                                                                              | 316         | 44.5        | 62                | 54.9              |         |
+|                        | selten                                                                           | 155         | 21.8        | 23                | 20.4              |         |
+| InfoInt[FB]            | immer                                                                            | 18          | 2.5         | 4                 | 3.5               | <0.05   |
+|                        | oft                                                                              | 55          | 7.7         | 21                | 18.6              |         |
+|                        | nie                                                                              | 503         | 70.8        | 61                | 54.0              |         |
+|                        | selten                                                                           | 128         | 18.0        | 25                | 22.1              |         |
+| InfoInt[Twitt]         | immer                                                                            | 15          | 2.1         | 1                 | 0.9               | 0.128   |
+|                        | oft                                                                              | 60          | 8.5         | 3                 | 2.7               |         |
+|                        | nie                                                                              | 531         | 74.8        | 91                | 80.5              |         |
+|                        | selten                                                                           | 99          | 13.9        | 16                | 14.2              |         |
+| InfoInt[Snap]          | immer                                                                            | 13          | 1.8         | 1                 | 0.9               | 0.361   |
+|                        | oft                                                                              | 17          | 2.4         | 1                 | 0.9               |         |
+|                        | nie                                                                              | 629         | 88.6        | 106               | 93.8              |         |
+|                        | selten                                                                           | 44          | 6.2         | 3                 | 2.7               |         |
+| InfoInt[LinkX]         | immer                                                                            | 3           | 0.4         | 3                 | 2.7               | <0.05   |
+|                        | oft                                                                              | 26          | 3.7         | 3                 | 2.7               |         |
+|                        | nie                                                                              | 613         | 86.3        | 103               | 91.2              |         |
+|                        | selten                                                                           | 62          | 8.7         | 2                 | 1.8               |         |
+| InfoInt[What]          | immer                                                                            | 76          | 10.7        | 12                | 10.6              | 0.181   |
+|                        | oft                                                                              | 99          | 13.9        | 23                | 20.4              |         |
+|                        | nie                                                                              | 416         | 58.6        | 55                | 48.7              |         |
+|                        | selten                                                                           | 114         | 16.1        | 21                | 18.6              |         |
+| InfoInt[Tel]           | immer                                                                            | 12          | 1.7         | 6                 | 5.3               | <0.05   |
+|                        | oft                                                                              | 24          | 3.4         | 16                | 14.2              |         |
+|                        | nie                                                                              | 621         | 87.5        | 69                | 61.1              |         |
+|                        | selten                                                                           | 46          | 6.5         | 20                | 17.7              |         |
+| InfoInt[Ander]         | immer                                                                            | 12          | 1.7         | 2                 | 1.8               | 0.105   |
+|                        | oft                                                                              | 46          | 6.5         | 9                 | 8.0               |         |
+|                        | nie                                                                              | 541         | 76.2        | 74                | 65.5              |         |
+|                        | selten                                                                           | 106         | 14.9        | 26                | 23.0              |         |
+| Face2Face[Fam]         | mehrmals die Woche                                                               | 379         | 53.4        | 44                | 38.9              | <0.05   |
+|                        | monatlich                                                                        | 32          | 4.5         | 8                 | 7.1               |         |
+|                        | nie                                                                              | 5           | 0.7         | 4                 | 3.5               |         |
+|                        | täglich                                                                          | 156         | 22.0        | 31                | 27.4              |         |
+|                        | wöchentlich                                                                      | 134         | 18.9        | 24                | 21.2              |         |
+| Face2Face[Fachpers]    | mehrmals die Woche                                                               | 48          | 6.8         | 10                | 8.8               | 0.269   |
+|                        | monatlich                                                                        | 269         | 37.9        | 50                | 44.2              |         |
+|                        | nie                                                                              | 282         | 39.7        | 33                | 29.2              |         |
+|                        | täglich                                                                          | 30          | 4.2         | 6                 | 5.3               |         |
+|                        | wöchentlich                                                                      | 76          | 10.7        | 12                | 10.6              |         |
+| ImpfHistory            | Ja                                                                               | 619         | 87.2        | 88                | 77.9              | <0.05   |
+|                        | Nein                                                                             | 91          | 12.8        | 24                | 21.2              |         |
+| MediWork               | Ja                                                                               | 139         | 19.6        | 18                | 15.9              | 0.317   |
+|                        | Nein                                                                             | 26          | 3.7         | 1                 | 0.9               |         |
+| PersHausAlone          | Alleine leben                                                                    | 142         | 20.0        | 25                | 22.1              | 0.522   |
+|                        | Nicht alleine leben                                                              | 556         | 78.3        | 82                | 72.6              |         |
+| BerufAb                | (Fach-)Hochschulabschluss (Bachelor/ Master, Diplom/ Magister)                   | 314         | 44.2        | 41                | 36.3              | <0.05   |
+|                        | Beruflich-betriebliche Ausbildung                                                | 121         | 17.0        | 38                | 33.6              |         |
+|                        | Hochschulabschluss (Promotion, Habilitation)                                     | 18          | 2.5         | 9                 | 8.0               |         |
+|                        | Keinen beruflichen Abschluss                                                     | 213         | 30.0        | 15                | 13.3              |         |
+| Sonstiges              | 10                                                                               | 1.4         | 2           | 1.8               |                   |         |
+| Staatsexamen           | 26                                                                               | 3.7         | 6           | 5.3               |                   |         |
+| Eink                   | 1.000 bis unter 1.500€                                                           | 97          | 13.7        | 15                | 13.3              |         |
+| 1.500 bis unter 2.000€ | 76                                                                               | 10.7        | 17          | 15.0              |                   |         |
+| 2.000 bis unter 3.000€ | 93                                                                               | 13.1        | 16          | 14.2              |                   |         |
+| 3.000 bis unter 4.000€ | 31                                                                               | 4.4         | 7           | 6.2               |                   |         |
+| 4.000 bis unter 5.000€ | 15                                                                               | 2.1         | 5           | 4.4               |                   |         |
+| 5.000 bis unter 6.000€ | 5                                                                                | 0.7         | 1           | 0.9               |                   |         |
+| 500 bis unter 1.000€   | 191                                                                              | 26.9        | 22          | 19.5              |                   |         |
+| 6.000€ und mehr        | 5                                                                                | 0.7         | 5           | 4.4               |                   |         |
+| Unter 500€             | 174                                                                              | 24.5        | 18          | 15.9              |                   |         |
+
+
+
+
+ 
+# Visualization
+
+## Age
+    
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+theme_set(theme_bw())
+
+ggplot(data = Project2) +
+  geom_histogram(mapping = aes(x = age, fill=ImpfZust),
+                 binwidth = 2, col="black", size=.1)+
+  labs(title="Histogram to explore the citinious variables",
+       subtitle="Question 1/1: Bitte geben Sie Ihr Alter in Jahren an")
+```
+
+## Govtrust
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+ggplot(data = Project2) +
+  geom_histogram(mapping = aes(x = Govtrust, fill=ImpfZust),
+                 binwidth = 3.5, col="black", size=.1)+
+  labs(title="Histogram to explore the citinious variables",
+       subtitle="Question 5/8: Wie zufrieden sind Sie mit der Arbeit der folgenden Einrichtungen während der Corona-Pandemie (in score transform)?")
+```
+
+
+
+# Modeling 
+
+## Variable
+
+* Question 1/1: Bitte geben Sie Ihr Alter in Jahren an (Age)
+* abitur or not (Abitur)
+* Question 9/6: Wie hoch ist Ihr monatliches Nettoeinkommen? (Eink)
+* vaccination history (ImpfHistory)
++ Question 5/4: Wie schätzen Sie die Qualität der Behandlung dieses Arztes/dieser Ärztin im Allgemeinen ein? (zapaQualBe)
++ Question 5/5: Werden/Wurden Sie durch einen Arzt/eine Ärztin über die Corona Impfungen aufgeklärt? (zapaImpf)
++ Question 5/8: Wie zufrieden sind Sie mit der Arbeit der folgenden Einrichtungen während der Corona-Pandemie (in score transform: Govtrust)
+
+
+**Comments**
+
+* educational attainment (repeated question to "abitur or not")
+* employment: Question 8/3: Wie ist Ihr aktuelles Beschäftigungsverhältnis? (these 12 variable are not meanful to include in the model)
+* Question 5/6: Haben sie aktiv nach einer Aufklärung gefragt? (AufklAkt) (AufklAkt and Question 5/5 zapaImpf perfectly collinear, only one could include in the model)
+* Question 5/7: Waren Sie zufrieden mit der Aufklärung über die Impfung (ZufriedAufk) (ZufriedAufk and 5/5 zapaImpf perfectly collinear, only one could include in the model, all subject with Ja in Question 5/5)
+
+<!-- table(Project2$zapaImpf, Project2$AufklAkt) -->
+<!-- table(Project2$zapaImpf, Project2$ZufriedAufk) -->
+
+
+## Results of full model
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+Project2$Abitur=NULL
+Project2$Abitur[Project2$Schulab=="Abitur/ Fachabitur"]="Ja"
+Project2$Abitur[Project2$Schulab=="Hauptschulabschluss"]="Nein"
+Project2$Abitur[Project2$Schulab=="Realschulabschluss"]="Nein"
+Project2$Abitur[Project2$Schulab=="Sonstiges"]="Nein"
+
+Project2$Abitur <- as.factor(Project2$Abitur)
+
+ 
+
+Project2$ImpfZust <- factor(Project2$ImpfZust, levels = c("Nein", "Ja"))
+## fit full model  
+fit.full <- glm(ImpfZust ~ age + Abitur + Eink + ImpfHistory + zapaQualBe + zapaImpf  + Govtrust,
+    data = Project2, family=binomial())
+
+ 
+```
+
+
+**Model: ImpfZust ~ age + Abitur + Eink + ImpfHistory + zapaQualBe + zapaImpf  + Govtrust**
+
+| Predictors                    | Odds Ratios |      CI      |    p   |
+|-------------------------------|:-----------:|:------------:|:------:|
+| (Intercept)                   |    16.11    | 4.49 – 61.19 | <0.001 |
+| age                           |     0.98    |  0.95 – 1.01 |  0.109 |
+| Abitur [Nein]                 |     1.19    |  0.47 – 3.12 |  0.716 |
+| Eink [1 500 bis unter 2 000€] |     1.27    |  0.45 – 3.68 |  0.652 |
+| Eink [2 000 bis unter 3 000€] |     1.86    |  0.66 – 5.29 |  0.239 |
+| Eink [3 000 bis unter 4 000€] |     2.36    | 0.60 – 10.44 |  0.234 |
+| Eink [4 000 bis unter 5 000€] |     0.98    |  0.20 – 5.49 |  0.985 |
+| Eink [5 000 bis unter 6 000€] |  1452145.03 |   0.00 – NA  |  0.983 |
+| Eink [500 bis unter 1 000€]   |     1.79    |  0.70 – 4.47 |  0.215 |
+| Eink [6 000€ und mehr]        |     0.76    |  0.12 – 4.93 |  0.772 |
+| Eink [Unter 500€]             |     1.98    |  0.77 – 5.09 |  0.153 |
+| ImpfHistory [Nein]            |     0.77    |  0.37 – 1.70 |  0.510 |
+| zapaQualBe [Eher hoch]        |     1.78    |  0.83 – 3.70 |  0.130 |
+| zapaQualBe [Sehr gering]      |     1.17    |  0.11 – 9.36 |  0.885 |
+| zapaQualBe [Sehr hoch]        |     2.58    |  1.07 – 6.24 |  0.034 |
+| zapaImpf [Nein]               |     0.22    |  0.12 – 0.39 | <0.001 |
+| Govtrust                      |     1.08    |  1.06 – 1.09 | <0.001 |
+
+
+## Submodel 1: remove Eink
+
+**Model: ImpfZust ~ age + Abitur + ImpfHistory + zapaQualBe + zapaImpf  + Govtrust**
+
+| Predictors               | Odds Ratios |      CI     |    p   |
+|--------------------------|:-----------:|:-----------:|:------:|
+| (Intercept)              | 28.79 | 9.83 – 89.93 | <0.001 |
+| age                      |  0.97 |  0.95 – 1.00 |  0.038 |
+| Abitur [Ja]              |     1.00    |  Reference  |        |
+| Abitur [Nein]            |  1.16 |  0.48 – 2.91 |  0.752 |
+| ImpfHistory [Ja]         |     1.00    |  Reference  |        |
+| ImpfHistory [Nein]       |  0.68 |  0.34 – 1.39 |  0.277 |
+| zapaQualBe [Eher gering] |     1.00    |  Reference  |        |
+| zapaQualBe [Eher hoch]   |  1.86 |  0.90 – 3.74 |  0.086 |
+| zapaQualBe [Sehr gering] |  1.21 |  0.12 – 8.70 |  0.861 |
+| zapaQualBe [Sehr hoch]   |  2.53 |  1.11 – 5.82 |  0.028 |
+| zapaImpf [Ja]            |     1.00    |  Reference  |        |
+| zapaImpf [Nein]          |  0.22 |  0.12 – 0.37 | <0.001 |
+| Govtrust                 |  1.08 |  1.06 – 1.09 | <0.001 |
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+Sub1 <- glm(ImpfZust ~ age + Abitur + ImpfHistory + zapaQualBe + zapaImpf  + Govtrust,
+    data = Project2, family=binomial())
+
+# library(sjPlot)
+# tab_model(Sub1,
+           # title="Odds ratios plot from sub model")
+```
+

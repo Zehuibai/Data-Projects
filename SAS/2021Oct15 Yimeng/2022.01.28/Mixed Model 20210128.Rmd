@@ -1,0 +1,92 @@
+---
+title: 'Aufgabenblatt 5: Korrelierte Daten II'
+author: "Zehui Bai"
+date: 'Stand: `r format(Sys.time(), "%F %H:%M Uhr")`'
+output:
+  html_document:
+    df_print: paged
+    number_sections: no
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: yes
+fontsize: 10pt
+editor_options:
+  chunk_output_type: console
+colorlinks: yes
+---
+
+Lesen Sie bitte das Paper von Watts et al. und beantworten Sie die folgenden Fragen:
+
+# Aufgabe I
+
+**1)	In der Studie sind gemischte Modelle zur Analyse der Daten eingesetzt worden. Welche Variable ist vermutlich als random intercept modelliert worden? (1 Punkt)**
+
+Neighbourhood 
+
+Random-intercept linear regression models were used to examine associations between individual-level and neighbourhood-level independent variables and the sedentary time outcome. So that the neighbourhood should be regarded as the random effect, random-intercept linear regression models mean, it allows different intercept  for different neighbourhood 
+
+
+# Aufgabe II
+
+
+**2)	Geben Sie alle linearen Prädiktoren von Tabelle IV vollständig an. Setzen Sie in einem zweiten Schritt die geschätzten Koeffizienten in die Gleichung ein. (4 Punkte)**
+
+
+## Fully adjusted model without interaction termsa
+
+Abbreviation
+
+* ST: sitting time
+* Etc: ethnicity
+* JC: job category
+* HS: hope scale
+* MP: mobility problems 
+* UPC: problems with usual activities and physical activity
+* SNC: social networks scale
+
+$$Y_{ST} = X_{age} + X_{gender} + X_{Etc} + X_{JC} + X_{HS} + X_{MP} + X_{UPC} + X_{SNC}$$
+$$Y_{ST} = \beta_{age}X_{age} + \beta_{gender}X_{gender} + \beta_{Etc}X_{Etc} + \beta_{JC}X_{JC} + \beta_{HS}X_{HS} + \beta_{MP}X_{MP} + \beta_{UPC}X_{UPC} - 0.002X_{SNC}$$
+
+
+## Fully adjusted model without interaction terms (Subgroup analyses)
+
+$$Y_{ST|gender = male} = \beta_{age}X_{age} + \beta_{Etc}X_{Etc} + \beta_{JC}X_{JC} + \beta_{HS}X_{HS} + \beta_{MP}X_{MP} + \beta_{UPC}X_{UPC}  −0.008X_{SNC}$$
+
+$$Y_{ST|gender = female} = \beta_{age}X_{age} + \beta_{Etc}X_{Etc} + \beta_{JC}X_{JC} + \beta_{HS}X_{HS} + \beta_{MP}X_{MP} + \beta_{UPC}X_{UPC} + 0.005X_{SNC}$$
+
+
+## Fully adjusted model with interaction terms
+
+
+$$Y_{ST} = X_{age} + X_{gender} + X_{Etc} + X_{JC} + X_{HS} + X_{MP} + X_{UPC} + X_{SNC} + X_{gender}*X_{SNC}$$
+
+$$Y_{ST} = \beta_{age}X_{age} + \beta_{gender}X_{gender} + \beta_{Etc}X_{Etc} + \beta_{JC}X_{JC} + \beta_{HS}X_{HS} + \beta_{MP}X_{MP} + \beta_{UPC}X_{UPC} - 0.009X_{SNC} + 0.014X_{gender}*X_{SNC}$$
+
+# Aufgabe III
+
+
+**3)	In den Limitationen der Studie wurden „multiple comparisons“ problematisiert. Beschreiben Sie das Problem und dessen Auswirkungen. Wie könnte man hier abhelfen? (5 Punkte)**
+
+
+From paper
+
+>  It should also be noted that with multiple comparisons of variables there is increased likelihood of type I errors (incorrectly reporting significant relationships) as these relationships may have been observed by chance (Feise, 2002).
+
+
+
+The first thing to note is that the problem of multiplicity only arises if there are multiple primary endpoints, i.e. all of the primary endpoints are performed in a confirmed manner. The problem with all statistical tests is the fact that the (overall) error rate increases with increasing number of tests. $$1 - (1 - \alpha)^m.$$
+
+So the first solution is to adjust the study design.
+
+* On the one hand, one primary endpoint can be chosen and the other endpoints are performed in an exploratory manner, which avoids multiplicity issues
+* On the other hand, where all endpoints have been analyzed in a confirmatory manner, a horizontal test design can be chosen, ranking the endpoints to maintain type 1 error
+
+The second solution is to adjust the type 1 error, and there are different methods
+
+* Bonferroni Methods
+* Šidák Methods
+* Or using Closed and Stepwise Testing Methods
+
