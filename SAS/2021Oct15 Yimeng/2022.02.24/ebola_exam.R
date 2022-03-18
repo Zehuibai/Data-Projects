@@ -32,7 +32,7 @@ ipak <- function(pkg){
   sapply(pkg, require, character.only = TRUE)
 }
 ipak(packages)
-library()
+
 
 # Suppress warnings 
 oldwarning_Setting <- getOption("warn")
@@ -177,8 +177,10 @@ ebola_guinea %>%
 # calculate the odds ratio on the association between Ebola infection and the chance of death
 # using the package epiR
 
+# install.packages("epiR")
+# library("epiR")
 epiR::epi.2by2(table(ebola_guinea$EBOVcase, ebola_guinea$outcome))
-str(ebola_guinea)
+ 
 
 
 # Restore warning settings
