@@ -28,8 +28,13 @@ inst = lapply(pkgs, library, character.only = TRUE)
 
 ## 03.06 9:10-09.40
 ## 03.11 13:00-16:00, 20:30-21:10
-## 03.12 3h
+## 03.12 2.75h
 ## 03.13 3h
+## 03.21 1.25h
+## 03.22 2.5h
+
+0.5+3+0.5+5.75+3.75
+12.5+13.8+3.5+17.5+15
 ```
 
 
@@ -540,9 +545,7 @@ P8 <- ggplot(data = Project2 %>% filter(ImpfZust != "")  %>% filter(Household_si
   scale_fill_discrete(name = "Vaccine Status") +
   scale_x_discrete(labels=c("Alleine leben" = "Live alone", 
                             "Nicht alleine leben" = "Not live alone")) +
-  labs(title="Variable: Household size",
-       x="Household size",
-       y="") +
+  ggtitle(title="Demographic: Gender") + xlab(".....") + ylab(".....")
   theme_set(theme_grey())+
   theme(legend.position="bottom")
 
@@ -611,26 +614,48 @@ P13 <- ggplot(data = Project2 %>% filter(ImpfZust != "")) +
   theme(legend.position="bottom") 
 
 
-ggarrange(P1+ theme(legend.position="none"), 
-          P2+ theme(legend.position="none"), 
-          P3+ theme(legend.position="none"), 
-          P4+ theme(legend.position="none"),
-          P5+ theme(legend.position="none"),
-          P6+ theme(legend.position="none"),
-          P7+ theme(legend.position="none"),
-          P8+ theme(legend.position="none"),
-          labels = c("A", "B", "C", "D", "E", "F","G","H"),
-          ncol = 2, nrow = 4) %>%
-  annotate_figure( top = text_grob("Histogram/Bar chart to explore investifated variables", face = "bold", size = 12))
+# ggarrange(P1+ theme(legend.position="none"), 
+#           P2+ theme(legend.position="none"), 
+#           P3+ theme(legend.position="none"), 
+#           P4+ theme(legend.position="none"),
+#           P5+ theme(legend.position="none"),
+#           P6+ theme(legend.position="none"),
+#           P7+ theme(legend.position="none"),
+#           P8+ theme(legend.position="none"),
+#           labels = c("A", "B", "C", "D", "E", "F","G","H"),
+#           ncol = 2, nrow = 4) %>%
+#   annotate_figure( top = text_grob("Histogram/Bar chart to explore investifated variables", face = "bold", size = 12))
+# 
+# 
+# ggarrange(P9, P10, P11, P12, P13,
+#           common.legend = TRUE,
+#           legend="bottom",
+#           labels = c("I", "J", "K", "L", "M"),
+#           ncol = 2, nrow = 3)
 
-
-ggarrange(P9, P10, P11, P12, P13,
+# 20220322
+ggarrange(P1, 
+          P2, 
+          P3, 
+          P4,
+          P5,
+          P6,
+          P7,
+          P8,
+          P9,
           common.legend = TRUE,
           legend="bottom",
-          labels = c("I", "J", "K", "L", "M"),
-          ncol = 2, nrow = 3)
+          labels = c("A", "B", "C", "D", "E", "F","G","H","I"),
+          ncol = 2, nrow = 5) %>%
+  annotate_figure( top = text_grob("Histogram/Bar chart to explore socio-demographic characteristics", face = "bold", size = 12))
 
 
+ggarrange(P10, P11, P12, P13,
+          common.legend = TRUE,
+          legend="bottom",
+          labels = c( "J", "K", "L", "M"),
+          ncol = 2, nrow = 2)%>%
+  annotate_figure( top = text_grob("Histogram/Bar chart to explore variables of trust in HCPs and authorities", face = "bold", size = 12))
 ```
  
  
