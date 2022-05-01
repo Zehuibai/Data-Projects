@@ -1,0 +1,237 @@
+---
+title: "ML: MNIST digits."
+author: "Zehui Bai"
+date: "27/04/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+library(tidyverse)
+library(dslabs)
+mnist <- read_mnist()
+
+## The dataset includes two components, a training set and test set:
+names(mnist)
+
+dim(mnist$train$images)
+
+## Because we want this example to run on a small laptop and in less than one hour, we will consider a subset of the dataset. We will sample 10,000 random rows from the training set and 1,000 random rows from the test set:
+set.seed(1990)
+index <- sample(nrow(mnist$train$images), 10000)
+x <- mnist$train$images[index,]
+y <- factor(mnist$train$labels[index])
+
+index <- sample(nrow(mnist$test$images), 1000)
+x_test <- mnist$test$images[index,]
+y_test <- factor(mnist$test$labels[index])
+```
+
+## preprocessing
+
+In machine learning, we often transform predictors before running the machine algorithm. We also remove predictors that are clearly not useful. We call these steps preprocessing.
+
+> 删除了明显无用的预测变量。 我们称这些步骤为预处理。
+
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+## We can see that there is a large number of features with 0 variability:
+library(matrixStats)
+sds <- colSds(x)
+qplot(sds, bins = 256)
+
+## The caret packages includes a function that recommends features to be removed due to near zero variance:
+library(caret)
+nzv <- nearZeroVar(x)
+
+## We can see the columns recommended for removal:
+image(matrix(1:784 %in% nzv, 28, 28))
+
+rafalib::mypar()
+image(matrix(1:784 %in% nzv, 28, 28))
+
+### So we end up keeping this number of columns:
+
+col_index <- setdiff(1:ncol(x), nzv)
+length(col_index)
+
+colnames(x) <- 1:ncol(mnist$train$images)
+colnames(x_test) <- colnames(x)
+```
+
+# Model Fitting
+
+## k-nearest neighbor
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+## 当我们运行算法时，我们必须计算测试集中每个观察值与训练集中每个观察值之间的距离。 有很多计算。 因此，我们将使用 k 折交叉验证来提高速度。
+## In general, it is a good idea to try a test run with a subset of the data to get an idea of timing before we start running code that might take hours to complete.
+n <- 1000
+b <- 2
+index <- sample(nrow(x), n)
+control <- trainControl(method = "cv", number = b, p = .9)
+train_knn <- train(x[index, col_index], y[index], 
+                   method = "knn", 
+                   tuneGrid = data.frame(k = c(3,5,7)),
+                   trControl = control)
+
+## 然后我们可以增加 n 和 b 并尝试建立它们如何影响计算时间的模式，以了解对于较大的 n 和 b 值拟合过程需要多长时间。 您想知道一个函数在运行之前是否需要数小时甚至数天。
+## 一旦我们优化了我们的算法，我们就可以将它拟合到整个数据集：
+fit_knn <- knn3(x[, col_index], y,  k = 3)
+y_hat_knn <- predict(fit_knn, x_test[, col_index], type="class")
+cm <- confusionMatrix(y_hat_knn, factor(y_test))
+cm$overall["Accuracy"]
+
+## 从特异性和敏感性来看，我们还看到 8 是最难检测到的，最常被错误预测的数字是 7
+cm$byClass[,1:2]
+```
+
+
+## random forest 
+
+对于随机森林，计算时间是一个挑战。 对于每个森林，我们需要建造数百棵树。 我们还有几个可以调整的参数。因为对于随机森林，拟合是过程中最慢的部分，而不是预测（与 kNN 一样），我们将只使用五折交叉验证。 我们还将减少适合的树的数量，因为我们尚未构建最终模型。最后，为了在较小的数据集上进行计算，我们将在构建每棵树时随机抽取观测值样本。 我们可以用 nSamp 参数改变这个数字。
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+library(randomForest)
+control <- trainControl(method="cv", number = 5)
+grid <- data.frame(mtry = c(1, 5, 10, 25, 50, 100))
+
+train_rf <-  train(x[, col_index], y, 
+                   method = "rf", 
+                   ntree = 150,
+                   trControl = control,
+                   tuneGrid = grid,
+                   nSamp = 5000)
+
+### Now that we have optimized our algorithm, we are ready to fit our final model:
+fit_rf <- randomForest(x[, col_index], y, 
+                       minNode = train_rf$bestTune$mtry)
+
+### To check that we ran enough trees we can use the plot function:
+plot(fit_rf)
+
+### We see that we achieve high accuracy:
+
+y_hat_rf <- predict(fit_rf, x_test[ ,col_index])
+cm <- confusionMatrix(y_hat_rf, y_test)
+cm$overall["Accuracy"] 
+
+
+rafalib::mypar(3,4)
+for(i in 1:12){
+     image(matrix(x_test[i,], 28, 28)[, 28:1], 
+           main = paste("Our prediction:", y_hat_rf[i]),
+           xaxt="n", yaxt="n")
+}
+
+```
+
+
+**Variable importance**
+
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+### computes the importance of each feature:
+imp <- importance(fit_rf)
+
+### see which features are being used most by plotting an image:
+rafalib::mypar()
+mat <- rep(0, ncol(x))
+mat[col_index] <- imp
+image(matrix(mat, 28, 28))
+
+```
+
+
+# Ensembles
+
+集成的想法类似于组合来自不同民意调查者的数据以获得更好估计每个候选人的真实支持的想法。
+
+在机器学习中，通常可以通过组合不同算法的结果来大大提高最终结果。
+
+这是一个简单的例子，我们通过取随机森林和 kNN 的平均值来计算新的类概率。 我们可以看到准确率提高到 0.96：
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+p_rf <- predict(fit_rf, x_test[,col_index], type = "prob")  
+p_rf<- p_rf / rowSums(p_rf)
+
+p_knn  <- predict(fit_knn, x_test[,col_index])
+p <- (p_rf + p_knn)/2
+
+y_pred <- factor(apply(p, 1, which.max)-1)
+
+confusionMatrix(y_pred, y_test)$overall["Accuracy"]
+#> Accuracy 
+#>    0.961
+```
+
+
+
+
+
+```{r,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+### all the trained models i
+models <- c("glm", "lda", "naive_bayes", "svmLinear", "knn", "gamLoess", "multinom", "qda", "rf", "adaboost")
+set.seed(1, sample.kind = "Rounding") 
+
+data("mnist_27")
+
+fits <- lapply(models, function(model){ 
+    print(model)
+    train(y ~ ., method = model, data = mnist_27$train)
+}) 
+
+names(fits) <- models
+
+### dimensions of the matrix of predictions
+pred <- sapply(fits, function(object) 
+    predict(object, newdata = mnist_27$test))
+dim(pred)
+
+### compute accuracy for each model on the test set.
+acc <- colMeans(pred == mnist_27$test$y)
+acc
+mean(acc)
+
+### build an ensemble prediction by majority vote and compute the accuracy of the ensemble. Vote 7 if more than 50% of the models are predicting a 7, and 2 otherwise.
+votes <- rowMeans(pred == "7")
+y_hat <- ifelse(votes > 0.5, "7", "2")
+mean(y_hat == mnist_27$test$y)
+
+### How many of the individual methods do better than the ensemble?
+ind <- acc > mean(y_hat == mnist_27$test$y)
+sum(ind)
+models[ind]
+
+### What is the mean of these training set accuracy estimates?
+acc_hat <- sapply(fits, function(fit) min(fit$results$Accuracy))
+mean(acc_hat)
+
+
+# set.seed(1) # if using R 3.5 or earlier
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+mu <- round(80 + 2*rt(1000, 5))
+
+scores <- sapply(1:nrow(schools), function(i){
+       scores <- mean(rnorm(schools$size[i], schools$quality[i], 30))
+       scores
+})
+schools <- schools %>% mutate(score = sapply(scores, mean))
+
+
+
+
+schools %>% top_n(10, score) %>% .$size %>% median()
+
+
+median(schools$size)
+schools %>% top_n(10, score) %>% .$size %>% median()
+
+schools %>% top_n(10, score) %>% arrange(desc(score)) %>% dplyr::select(id, size, score)
+```
+
