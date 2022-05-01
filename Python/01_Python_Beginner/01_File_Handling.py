@@ -1,7 +1,3 @@
-
-
-
-
 #################################################
 ### Python Directory and Files Management
 #################################################
@@ -25,25 +21,16 @@ os.rename('old.txt','new_one')
 os.remove('old.txt')
 
 
-https://www.w3school.com.cn/python/python_file_open.asp
-
-
-
-
-f = open("C:\\Users\\zbai\\Desktop\\Python\\Python_for_Data_Analysis\\datasets\\babynames\\yob1880.txt", "r")
-print(f.read())
-
-
-
-script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
-rel_path = "C:/Users/bai/Desktop/Python/Python for Data Analysis/datasets/babynames/yob1880.txt"
-abs_file_path = os.path.join(script_dir, rel_path)
 
 
 
  
 
+
  
+
+ 
+
 
 
 
