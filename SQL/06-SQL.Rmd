@@ -1,0 +1,473 @@
+# SQL
+
+
+```{r mind map,echo = F,message = FALSE, error = FALSE, warning = FALSE}
+library('mindr')
+### text -> widget
+### input <- c("# Chapter 1", "## Section 1.1", "### Section 1.1.1", "## Section 1.2", "# Chapter 2")
+### mm(from = input, type = "text", root = "mindr")
+filename <- rstudioapi::getSourceEditorContext()$path
+widget <- mm(from = filename, type = "file", root = "")
+widget
+```
+
+## MySQL: Management
+
+MySQL is the most popular relational database management system. In terms of web applications, MySQL is one of the best RDBMS (Relational Database Management System) application software.
+
+Each database has one or more different APIs for creating, accessing, managing, searching and copying the saved data. We can also store data in files, but the speed of reading and writing data in files is relatively slow. So, now we use relational database management system (RDBMS) to store and manage the large amount of data. The so-called relational database is a database built on the basis of a relational model, which uses mathematical concepts and methods such as set algebra to process data in the database.
+
+RDBMS is the characteristic of relational database management system (Relational Database Management System):
+
+1. The data appears in the form of a table
+2. Each line of various record names
+3. Each column is the data field corresponding to the record name
+4. Many rows and columns form a form
+5. Several forms form a database
+
+In Windows, open a command window (cmd) and enter the bin directory of the MySQL installation directory.
+
+**start up**
+
+```
+cd c:/mysql/bin
+mysqld --console
+```
+
+**Close**
+
+```
+cd c:/mysql/bin
+mysqladmin -uroot shutdown
+```
+
+**SHOW DATABASES:**
+
+```
+mysql> SHOW DATABASES;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| nowcoder           |
+| mysql              |
+| performance_schema |
+| test               |
++--------------------+
+5 rows in set (0.02 sec)
+```
+**SHOW TABLES:**
+
+```
+mysql> use NOWCODER;
+Database changed
+mysql> SHOW TABLES;
++------------------+
+| Tables_in_nowcoder |
++------------------+
+| employee_tbl     |
+| nowcoder_tbl       |
+| tcount_tbl       |
++------------------+
+3 rows in set (0.00 sec)
+```
+
+**SHOW COLUMNS FROM Datasets**
+
+Display data table attributes, attribute types, primary key information, whether it is NULL, default values and other information.
+
+```
+mysql> SHOW COLUMNS FROM nowcoder_tbl;
++-------------------+--------------+------+-----+---------+-------+
+| Field               | Type         | Null | Key | Default | Extra |
++-------------------+--------------+------+-----+---------+-------+
+| nowcoder_id       | int(11)      | NO   | PRI | NULL    |       |
+| nowcoder_title    | varchar(255) | YES  |     | NULL    |       |
+| nowcoder_author   | varchar(255) | YES  |     | NULL    |       |
+| submission_date     | date         | YES  |     | NULL    |       |
++-------------------+--------------+------+-----+---------+-------+
+4 rows in set (0.01 sec)
+```
+
+**SHOW TABLE STATUS LIKE [FROM db_name] [LIKE 'pattern'] \G:**
+
+```
+mysql> SHOW TABLE STATUS from NOWCODER;   
+                                #显示数据库 NOWCODER 中所有表的信息
+mysql> SHOW TABLE STATUS from NOWCODER LIKE 'nowcoder%'; 
+                                #以nowcoder开头的表的信息
+mysql> SHOW TABLE STATUS from NOWCODER LIKE 'nowcoder%'\G; 
+                                #加上\G，查询结果按列打印
+```
+
+## MySQL PHP (In processing)
+
+MySQL can be used in many languages, including PERL, C, C++, JAVA and PHP. Among these languages, Mysql is the most widely used in PHP web development. PHP provides a variety of ways to access and manipulate Mysql database records. The PHP Mysqli function format is as follows:
+
+```
+mysqli_function(value,value,...);
+
+mysqli_connect($connect);
+mysqli_query($connect,"SQL statements");
+mysqli_fetch_array()
+mysqli_close()
+```
+
+
+## PROC SQL in SAS
+
+### Inreoduction
+
+* SELECT: Query the data in the data table
+* ALTER: add, delete or modify the columns of the data table
+* CREATE: Create a data table
+* DELETE: delete a column in the data table
+* DESCRIBE: List the attributes of the data table
+* DROP: delete the data table, view or index
+* INSERT: Insert data into the data table
+* UPDATE: Modify the column value of an existing data set
+
+**SQL Options**
+
+* FEEDBACK | NOFEEDBACK
+    + PROC SQL displays the PROC SQL statement in the SAS log or does some other conversion of the statement.
+* INOBS=n
+    + Limit the number of rows that PROC SQL retrieves from any single source
+* OUTOBS=n
+    + Limit the number of rows (observations) in the output.
+* NUMBER | NONUMBER
+    + Specify whether the SELECT statement includes a column called ROW, which is the row number of the data when the row is retrieved
+* PRINT | NOPRINT
+
+
+
+### Create Normal Table
+
+```
+proc sql outobs=10;   
+   title 'Densities of Countries';
+   create table sql.densities as
+      select Name 'Country' format $15.,
+             Population format=comma10.0,
+             Area as SquareMiles,
+             Population/Area format=6.2 as Density
+         from sql.countries;
+         
+create table countries1 as 
+   select * from sql.countries;
+```
+
+### Creating Tables like an Existing Table
+
+```
+proc sql;
+   create table sql.newcountries
+      like sql.countries;
+```
+
+### Inserting Rows
+
+```
+proc sql;
+   insert into sql.newcountries
+      values ('Pakistan', 'Islamabad', 123060000, ., ' ', .)
+      values ('Nigeria', 'Lagos', 99062000, ., ' ', .); 
+   title "World's Largest Countries";
+   select name format=$20., 
+          capital format=$15.,
+          population format=comma15.0
+      from sql.newcountries;
+      
+      
+*** Inserting Rows with a Query;
+proc sql;
+   create table sql.newcountries
+      like sql.countries;
+proc sql;
+   title "World's Largest Countries";
+   insert into sql.newcountries
+   select * from sql.countries
+      where population ge 130000000;
+
+   select name format=$20., 
+          capital format=$15.,
+          population format=comma15.0
+      from sql.newcountries;
+```
+
+### Delete Rows and Table
+
+```
+Delete Rows and Table
+proc sql;
+   delete
+      from sql.newcountries
+      where name like 'R%';
+      
+proc sql;
+   drop table sql.newcountries;
+```
+
+### New Columns using Summary Function
+
+$$
+\begin{array}{|l|l|}
+\hline \text { Summary Function } & \text { Description } \\
+\hline \text { AVG, MEAN } & \text { Average or mean of values } \\
+\hline \text { COUNT, FREQ, N } & \text { Aggregate number of non-missing values } \\
+\hline \text { CSS } & \text { Corrected sum of squares } \\
+\hline \text { CV } & \text { Coefficient of variation } \\
+\hline \text { MAX } & \text { Largest value } \\
+\hline \text { MIN } & \text { Smallest value } \\
+\hline \text { NMISS } & \text { Number of missing values } \\
+\hline \text { PRT } & \text { Probability of a greater absolute value of Student's t } \\
+\hline \text { RANGE } & \text { Difference between the largest and smallest values } \\
+\hline \text { STD } & \text { Standard deviation } \\
+\hline \text { STDERR } & \text { Standard error of the mean } \\
+\hline \text { SUM } & \text { Sum of values } \\
+\hline \text { SUMWGT } & \text { Sum of the weight variable values which is } 1 \\
+\hline \text { T } & \text { Testing the hypothesis that the population mean is zero } \\
+\hline \text { USS } & \text { Uncorrected sum of squares } \\
+\hline \text { VAR } & \text { Variance } \\
+\hline
+\end{array}
+$$
+
+```
+PROC SQL;
+    CREATE TABLE ratios AS
+    SELECT       *,
+    weight / height AS Ratio
+    FORMAT=5.2 LABEL='Weight:Height Ratio'
+    FROM         preteen
+    ;
+QUIT;
+
+Proc SQL;
+    select count(*) as row_count
+    from datasets;
+Quit;
+
+Proc SQL;
+    select AVG(length) AS Average_Movie_Length
+    from datasets
+    where UPCASE(rating) = "PG";
+Quit;
+
+```
+
+### Aggregation: Summary
+
+**Proc Summary: Derive summary statistics from our data**
+
+```
+PROC SUMMARY DATA=preteen;
+  /****************
+  CLASS sex;
+  ****************/
+  VAR age height weight;
+  OUTPUT OUT=overall_averages(DROP = _type_ _freq_)
+  MIN (age   )=Youngest
+  MAX (age   )=Oldest
+  MEAN(height)=Avg_Height
+  MEAN(weight)=Avg_Weight;
+RUN;
+
+PROC SQL;
+CREATE TABLE overall_averages AS
+SELECT       MIN (age)    AS Youngest,
+             MAX (age)    AS Oldest,
+             MEAN(height) AS Avg_Height FORMAT=5.1,
+             MEAN(weight) AS Avg_Weight FORMAT=5.1
+FROM         preteen
+/****************
+GROUP BY     sex
+*****************/
+;
+QUIT;
+```
+
+### Conditionality (If)
+
+```
+DATA trip_list;
+  SET preteen;
+  IF      age=11  THEN Trip = 'Zoo   ';
+  ELSE IF sex='F' THEN trip = 'Museum';
+  ELSE                 trip = '[None]';
+  KEEP fname age sex trip;
+RUN;
+
+DATA trip_list;
+ SET preteen;
+SELECT;
+  WHEN (age=11)  Trip = 'Zoo   ';
+  WHEN (sex='F') trip = 'Museum';
+  OTHERWISE      trip = '[None]';
+  END;
+KEEP fname age sex trip;
+RUN;
+PROC SQL;
+CREATE TABLE trip_list AS
+SELECT       fname,
+            age,
+            sex,
+            CASE WHEN age=11  THEN 'Zoo'
+                 WHEN sex='F' THEN 'Museum'
+                 ELSE              '[None]'
+                 END
+             AS Trip
+FROM         preteen
+; 
+QUIT;
+```
+
+### Filtering Aggregated Data (HAVING)
+
+```
+PROC SUMMARY DATA=preteen NWAY;
+CLASS sex age;
+OUTPUT MAX(height)=Tallest MIN(height)=Shortest
+OUT=hilo(WHERE = (tallest – shortest > 4)
+DROP = _type_ _freq_ );
+RUN;
+PROC SQL;
+CREATE TABLE hilo AS
+SELECT    sex,
+          age,
+          MAX(height) AS Tallest,
+          MIN(height) AS Shortest
+FROM      preteen
+GROUP BY  sex, age
+HAVING    tallest – shortest > 4
+;
+QUIT;
+
+```
+
+### Select Operator (Union...)
+
+
+
+```{r Select Operator, echo=FALSE, fig.align="center", out.width = '100%',fig.cap="Figure: Select Operator in PROC SQL"}
+knitr::include_graphics("./02_Plots/ProcSQL_Select.PNG")
+```
+
+```
+Proc SQL;
+    select  name, age
+    form    dataset_1
+    union
+    select  name, age
+    from    dataset_2
+    ;
+Quit;
+```
+### Loap
+
+```
+%let maxlevel = %sysfunc(strip(&maxlevel));
+%put &maxlevel.;
+
+*** Now build PROC SQL on-the-fly with the number of levels;
+*** CAT99 catches missings;
+proc sql noprint;
+	CREATE TABLE anon_D05_n AS
+		SELECT GROUP, SUBGROUP, 
+			"N" as Var,
+			SUM(CASE WHEN &var. eq . THEN 1 ELSE 0 END) AS CAT99,
+			%DO level = &minlevel. %to &maxlevel.-1;
+			SUM(CASE WHEN &var. eq &level. THEN 1 ELSE 0 END) AS CAT&level.,
+			%end;
+			SUM(CASE WHEN &var. eq &maxlevel. THEN 1 ELSE 0 END) AS CAT&maxlevel.
+		FROM &INPUT.
+		GROUP BY GROUP, SUBGROUP; 
+	QUIT;
+RUN;
+
+
+
+
+
+PROC SQL NOPRINT;
+	CREATE TABLE OEPNV_20_RISKV5_D01 AS
+	SELECT 	DISTINCT SUBJECTID, RNGRP,
+			SUM(ARBEITTAGE -1) 	AS ARBEITTAGE,
+			MEAN(KOLLEG)		AS KOLLEG,
+			MEAN(KONTAKT1)		AS KONTAKT1,
+			MAX(KONTAKTPOS1) 	AS KONTAKTPOS1 	FORMAT KONTAKTPOS1_F.,
+			MEAN(FAHRZEIT1) 	AS FAHRZEIT1,
+			MEAN(AUSLHIN) 		AS AUSLHIN,
+			MEAN(AUSLRUCK) 		AS AUSLRUCK,
+			MAX(MUNDSCH) 		AS MUNDSCH 		FORMAT MUNDSCH_F.,
+			MIN(FAHRVERST) 		AS FAHRVERST 	FORMAT FAHRVERST_F.,
+			MAX(HUST1)			AS HUST1 		FORMAT HUST1_F.,
+			MAX(HALS1)			AS HALS1 		FORMAT HALS_F.,	
+			MAX(RIECH1)			AS RIECH1 		FORMAT RIECH_F.,	
+			MAX(SCHNUPF1)		AS SCHNUPF1 	FORMAT SCHNUPF_F.,
+			MAX(BRUST1)			AS BRUST1 		FORMAT BRUST_F.,	
+			MAX(STUHL1)			AS STUHL1 		FORMAT STUHL_F.,	
+			MAX(KOPF1)			AS KOPF1 		FORMAT KOPF_F.,
+			MAX(GLIEDER1)		AS GLIEDER1 	FORMAT GLIEDER_F.,
+			MAX(FIEBER1)		AS FIEBER1 		FORMAT FIEBER_F.
+	FROM OEPNV_20_RISKV5_D01A
+	GROUP BY SUBJECTID 
+		;
+QUIT;
+```
+
+### Join
+
+```
+/* outer jion 全部汇总*/
+
+PROC SQL;
+create table outer AS
+select a.*,b.*
+from idht as a
+full outer join biday as b
+ON a.id1=b.id2;
+run;
+quit;
+
+/* inner 仅保留两个文件中都有信息的情况 */
+
+PROC SQL;
+create table inner AS
+select a.*, b.*
+from idht as a
+full outer join biday as b
+ON a.id1=b.id2;
+run;
+quit;      
+```
+
+### Reordering Rows (Proc Sort)
+
+```
+PROC SQL;
+CREATE TABLE age_sort AS
+SELECT    *
+FROM      preteen
+ORDER BY  age DESCENDING, fname
+;
+QUIT;
+
+*** NODUPRECS;
+PROC SQL;
+CREATE TABLE sex_age_distinct AS
+SELECT       DISTINCT *
+FROM         sex_age
+;
+QUIT;
+```
+
+## Package DBI (In processing)
+
+## Package sparklyr (In processing)
+
+
+
+
+
+
